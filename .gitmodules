@@ -1,0 +1,3 @@
+[submodule "PEARL"]
+	path = PEARL
+	url = https://github.com/ingako/PEARL.git
