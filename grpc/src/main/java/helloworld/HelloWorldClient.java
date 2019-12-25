@@ -65,6 +65,29 @@ public class HelloWorldClient {
     logger.info("Greeting: " + response.getMessage());
   }
 
+
+
+  public void predict(int[] seq) {
+    logger.info("Will try to predict the next position...");
+
+    SeqRequest.Builder builder = SeqRequest.newBuilder();
+    for (int i = 0; i < seq.length; i++) {
+        builder.addSeq(seq[i]);
+    }
+    SeqRequest request = builder.build();
+
+    SeqReply response;
+
+    try {
+      response = blockingStub.predict(request);
+    } catch (StatusRuntimeException e) {
+      logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+      return;
+    }
+
+    logger.info("Prediction: " + response.getMessage());
+  }
+
   /**
    * Greet server. If provided, the first element of {@code args} is the name to use in the
    * greeting.
@@ -79,6 +102,9 @@ public class HelloWorldClient {
         user = args[0];
       }
       client.greet(user);
+
+      int[] seq = {41, 42, 43, 44, 45};
+      client.predict(seq);
     } finally {
       client.shutdown();
     }

@@ -37,6 +37,7 @@ public class HelloWorldServer {
         .addService(new GreeterImpl())
         .build()
         .start();
+
     logger.info("Server started, listening on " + port);
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -81,5 +82,15 @@ public class HelloWorldServer {
       responseObserver.onNext(reply);
       responseObserver.onCompleted();
     }
+
+    @Override
+    public void predict(SeqRequest req, StreamObserver<SeqReply> responseObserver) {
+      int size = req.getSeqCount();
+      SeqReply reply = SeqReply.newBuilder().setMessage(req.getSeq(size - 1)).build();
+
+      responseObserver.onNext(reply);
+      responseObserver.onCompleted();
+    }
   }
+
 }
