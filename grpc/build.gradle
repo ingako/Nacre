@@ -63,14 +63,14 @@ sourceSets {
 
 startScripts.enabled = false
 
-task helloWorldServer(type: CreateStartScripts) {
+task seqPredictionServer(type: CreateStartScripts) {
     mainClassName = 'seqprediction.SeqPredictionServer'
     applicationName = 'seq-prediction-server'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
 
-task helloWorldClient(type: CreateStartScripts) {
+task seqPredictionClient(type: CreateStartScripts) {
     mainClassName = 'seqprediction.SeqPredictionClient'
     applicationName = 'seq-prediction-client'
     outputDir = new File(project.buildDir, 'tmp')
@@ -78,7 +78,7 @@ task helloWorldClient(type: CreateStartScripts) {
 }
 
 applicationDistribution.into('bin') {
-    from(helloWorldServer)
-    from(helloWorldClient)
+    from(seqPredictionServer)
+    from(seqPredictionClient)
     fileMode = 0755
 }
