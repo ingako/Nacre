@@ -14,27 +14,15 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "helloworld";
-option java_outer_classname = "HelloWorldProto";
-option objc_class_prefix = "HLW";
+option java_package = "seqprediction";
+option java_outer_classname = "SeqPredictionProto";
+option objc_class_prefix = "SQP";
 
-package helloworld;
+package seqprediction;
 
-// The greeting service definition.
-service Greeter {
-  // Sends a greeting
-  rpc SayHello (HelloRequest) returns (HelloReply) {}
+// The sequence prediction service definition.
+service Predictor {
   rpc predict (SeqMsg) returns (SeqMsg) {}
-}
-
-// The request message containing the user's name.
-message HelloRequest {
-  string name = 1;
-}
-
-// The response message containing the greetings
-message HelloReply {
-  string message = 1;
 }
 
 message SeqMsg {

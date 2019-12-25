@@ -64,15 +64,15 @@ sourceSets {
 startScripts.enabled = false
 
 task helloWorldServer(type: CreateStartScripts) {
-    mainClassName = 'helloworld.HelloWorldServer'
-    applicationName = 'hello-world-server'
+    mainClassName = 'seqprediction.SeqPredictionServer'
+    applicationName = 'seq-prediction-server'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
 
 task helloWorldClient(type: CreateStartScripts) {
-    mainClassName = 'helloworld.HelloWorldClient'
-    applicationName = 'hello-world-client'
+    mainClassName = 'seqprediction.SeqPredictionClient'
+    applicationName = 'seq-prediction-client'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
