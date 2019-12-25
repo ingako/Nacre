@@ -38,11 +38,15 @@ message HelloReply {
 }
 
 message SeqRequest {
-    repeated int32 seq = 4;
+    int32 seqId = 2;
     // string seq = 4;
+    repeated int32 seq = 4;
 }
 
 message SeqReply {
-    int32 message = 4;
+    int32 seqId = 2;
+    repeated int32 seq = 4;
+
+    // int32 message = 4;
     // string message = 4;
 }
