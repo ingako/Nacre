@@ -58,13 +58,13 @@ public class HelloWorldClient {
     public void predict(int seqId, int[] seq) {
         logger.info("Will try to predict the next position...");
 
-        SeqRequest.Builder builder = SeqRequest.newBuilder();
+        SeqMsg.Builder builder = SeqMsg.newBuilder();
         for (int i = 0; i < seq.length; i++) {
             builder.addSeq(seq[i]);
         }
 
-        SeqRequest request = builder.setSeqId(seqId).build();
-        SeqReply response;
+        SeqMsg request = builder.setSeqId(seqId).build();
+        SeqMsg response;
 
         try {
             response = blockingStub.predict(request);

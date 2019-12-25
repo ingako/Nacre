@@ -93,7 +93,7 @@ public class HelloWorldServer {
             }
 
             @Override
-            public void predict(SeqRequest req, StreamObserver<SeqReply> responseObserver) {
+            public void predict(SeqMsg req, StreamObserver<SeqMsg> responseObserver) {
 
 		        // initializing the CPT Plus predictor 
 		        MarkovAllKPredictor akom = new MarkovAllKPredictor();
@@ -119,12 +119,12 @@ public class HelloWorldServer {
 		        Sequence predicted = akom.Predict(Sequence.fromString(5, "5 5 3"));
 		        System.out.println("Predicted symbol: " + predicted);
 
-                SeqReply.Builder builder = SeqReply.newBuilder();
+                SeqMsg.Builder builder = SeqMsg.newBuilder();
                 for (Item item : predicted.getItems()) {
                     builder.addSeq(item.val);
                 }
 
-                SeqReply reply = builder.build();
+                SeqMsg reply = builder.build();
 
                 responseObserver.onNext(reply);
                 responseObserver.onCompleted();
