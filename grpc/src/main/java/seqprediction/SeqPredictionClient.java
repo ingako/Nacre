@@ -27,9 +27,6 @@ import java.util.logging.Logger;
 import ipredict.database.Item;
 import ipredict.database.Sequence;
 
-/**
- * A simple client that requests a greeting from the {@link HelloWorldServer}.
- */
 public class SeqPredictionClient {
     private static final Logger logger = Logger.getLogger(SeqPredictionClient.class.getName());
 
@@ -58,13 +55,13 @@ public class SeqPredictionClient {
     public void predict(int seqId, int[] seq) {
         logger.info("Will try to predict the next position...");
 
-        SeqMsg.Builder builder = SeqMsg.newBuilder();
+        SequenceMessage.Builder builder = SequenceMessage.newBuilder();
         for (int i = 0; i < seq.length; i++) {
             builder.addSeq(seq[i]);
         }
 
-        SeqMsg request = builder.setSeqId(seqId).build();
-        SeqMsg response;
+        SequenceMessage request = builder.setSeqId(seqId).build();
+        SequenceMessage response;
 
         try {
             response = blockingStub.predict(request);

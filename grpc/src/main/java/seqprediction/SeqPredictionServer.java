@@ -28,6 +28,7 @@ import java.util.List;
 import ipredict.database.Item;
 import ipredict.database.Sequence;
 import ipredict.predictor.CPT.CPTPlus.CPTPlusPredictor;
+import ipredict.predictor.CPT.CPT.CPTPredictor;
 import ipredict.predictor.Markov.MarkovAllKPredictor;
 import ipredict.predictor.profile.DefaultProfile;
 
@@ -85,43 +86,72 @@ public class SeqPredictionServer {
 
     static class PredictorImpl extends PredictorGrpc.PredictorImplBase {
 
-            @Override
-            public void predict(SeqMsg req, StreamObserver<SeqMsg> responseObserver) {
+        CPTPredictor cpt;
+        DefaultProfile profile;
 
-		        // initializing the CPT Plus predictor 
-		        MarkovAllKPredictor akom = new MarkovAllKPredictor();
-		        
-		        // setting the experiment parameters
-		        DefaultProfile profile = new DefaultProfile();
-		        profile.Apply();
+        private void init() {
+            // initializing the CPT predictor
+            if (cpt == null) {
+                cpt = new CPTPredictor();
 
-                // prepare sequence
-                int count = req.getSeqCount();
-                Sequence seq = new Sequence(req.getSeqId());
-
-                for (int i = 0; i < count; i++) {
-                    seq.addItem(new Item(req.getSeq(i)));
-                    System.out.println(req.getSeq(i));
-                }
-		        
-		        List<Sequence> trainingSet = new ArrayList<Sequence>();
-                trainingSet.add(seq);
-		        akom.Train(trainingSet);
-		        
-		        // predicting a sequence
-		        Sequence predicted = akom.Predict(Sequence.fromString(5, "5 5 3"));
-		        System.out.println("Predicted symbol: " + predicted);
-
-                SeqMsg.Builder builder = SeqMsg.newBuilder();
-                for (Item item : predicted.getItems()) {
-                    builder.addSeq(item.val);
-                }
-
-                SeqMsg reply = builder.build();
-
-                responseObserver.onNext(reply);
-                responseObserver.onCompleted();
+                // setting the experiment parameters
+                profile = new DefaultProfile();
+                profile.Apply();
             }
+        }
+
+        private Sequence getSequenceFromRequest(SequenceMessage request) {
+            int count = request.getSeqCount();
+            Sequence seq = new Sequence(request.getSeqId());
+
+            for (int i = 0; i < count; i++) {
+                seq.addItem(new Item(request.getSeq(i)));
+            }
+
+            return seq;
+        }
+
+        @Override
+        public void predict(SequenceMessage request, StreamObserver<SequenceMessage> responseObserver) {
+
+            init();
+
+            // prepare sequence
+            Sequence seq = getSequenceFromRequest(request);
+
+            // predicting a sequence
+            Sequence predicted = cpt.Predict(seq);
+            System.out.println("Predicted symbol: " + predicted);
+
+            SequenceMessage.Builder builder = SequenceMessage.newBuilder();
+            for (Item item : predicted.getItems()) {
+                builder.addSeq(item.val);
+            }
+
+            SequenceMessage reply = builder.build();
+
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void train(seqprediction.SequenceMessage request,
+                          io.grpc.stub.StreamObserver<seqprediction.TrainResponse> responseObserver) {
+
+            init();
+
+            // prepare sequence
+            Sequence seq = getSequenceFromRequest(request);
+
+            List<Sequence> trainingSet = new ArrayList<Sequence>();
+            trainingSet.add(seq);
+            cpt.Train(trainingSet);
+
+            TrainResponse reply = TrainResponse.newBuilder().setResult(true).build();
+
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
     }
 
 }

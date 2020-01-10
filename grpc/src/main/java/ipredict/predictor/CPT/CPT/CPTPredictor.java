@@ -29,11 +29,13 @@ public class CPTPredictor extends Predictor {
 	private String TAG = "CPT";
 	
 	private long nodeNumber; //number of node in the prediction tree
+    private int seqId;
 	
 	public Paramable parameters;
 	
 	public CPTPredictor() {
 		nodeNumber = 0;
+        seqId = 0;
 		Root = new PredictionTree();
 		LT = new HashMap<Integer, PredictionTree>();
 		II = new HashMap<Integer, Bitvector>();
@@ -347,12 +349,6 @@ public class CPTPredictor extends Predictor {
 	 */
 	@Override
 	public Boolean Train(List<Sequence> trainingSequences) {
-		
-		nodeNumber = 0;
-		int seqId = 0; //current sequence from database
-		Root = new PredictionTree();
-		LT = new HashMap<Integer, PredictionTree>();
-		II = new HashMap<Integer, Bitvector>();
 		
 		//Logging memory usage
 		MemoryLogger.addUpdate();
