@@ -33,7 +33,7 @@ pro_pearl::pro_pearl(int num_trees,
     backtrack_swapped_trees.push_back(nullptr);
 }
 
-bool pro_pearl::process() {
+int pro_pearl::predict() {
 
     int actual_label = instance->getLabel();
 
@@ -41,7 +41,7 @@ bool pro_pearl::process() {
     vector<int> votes(num_classes, 0);
 
     drift_detected = false;
-    pearl::process_with_state_adaption(votes, actual_label);
+    pearl::predict_with_state_adaption(votes, actual_label);
 
     // if (backtrack_instances.size() >= num_max_backtrack_instances) {
     //     delete backtrack_instances[0];
@@ -49,22 +49,22 @@ bool pro_pearl::process() {
     // }
     backtrack_instances.push_back(instance);
 
-    pearl::train(*instance);
+    pearl::train();
     num_instances_seen++;
 
-    int predicted_label = pearl::vote(votes);
-
-    return predicted_label == actual_label;
+    return pearl::vote(votes);
 }
 
 void pro_pearl::select_candidate_trees_proactively() {
     int class_count = instance->getNumberClasses();
+    shared_ptr<pearl_tree> cur_tree = nullptr;
 
     // sort foreground trees by kappa
-    for (int i = 0; i < adaptive_trees.size(); i++) {
-        adaptive_trees[i]->update_kappa(actual_labels, class_count);
+    for (int i = 0; i < foreground_trees.size(); i++) {
+        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
+        cur_tree->update_kappa(actual_labels, class_count);
     }
-    sort(adaptive_trees.begin(), adaptive_trees.end(), compare_kappa);
+    sort(foreground_trees.begin(), foreground_trees.end(), compare_kappa_arf);
 
     // TODO find the worst trees and mark as warning detected
     vector<int> warning_tree_pos_list;
@@ -81,12 +81,14 @@ void pro_pearl::adapt_state_proactively() {
     }
 
     int class_count = instance->getNumberClasses();
+    shared_ptr<pearl_tree> cur_tree = nullptr;
 
     // sort foreground trees by kappa
-    for (int i = 0; i < adaptive_trees.size(); i++) {
-        adaptive_trees[i]->update_kappa(actual_labels, class_count);
+    for (int i = 0; i < foreground_trees.size(); i++) {
+        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
+        cur_tree->update_kappa(actual_labels, class_count);
     }
-    sort(adaptive_trees.begin(), adaptive_trees.end(), compare_kappa);
+    sort(foreground_trees.begin(), foreground_trees.end(), compare_kappa_arf);
 
     // sort candiate trees by kappa
     for (int i = 0; i < candidate_trees.size(); i++) {
@@ -94,12 +96,14 @@ void pro_pearl::adapt_state_proactively() {
     }
     sort(candidate_trees.begin(), candidate_trees.end(), compare_kappa);
 
-    for (int i = 0; i < adaptive_trees.size(); i++) {
-        if (adaptive_trees[i]->kappa < candidate_trees.back()->kappa) {
-            adaptive_trees[i].reset();
+    for (int i = 0; i < foreground_trees.size(); i++) {
+        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
+
+        if (cur_tree->kappa < candidate_trees.back()->kappa) {
+            cur_tree.reset();
             candidate_trees.back()->reset();
 
-            adaptive_trees[i] = candidate_trees.back();
+            foreground_trees[i] = candidate_trees.back();
             candidate_trees.pop_back();
 
         } else {
@@ -118,8 +122,8 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
     }
     sort(candidate_trees.begin(), candidate_trees.end(), compare_kappa);
 
-    shared_ptr<adaptive_tree> first_drifted_tree;
-    shared_ptr<adaptive_tree> best_swapped_tree;
+    shared_ptr<pearl_tree> first_drifted_tree;
+    shared_ptr<pearl_tree> best_swapped_tree;
 
     for (int i = 0; i < drifted_tree_pos_list.size(); i++) {
         // TODO
@@ -130,8 +134,8 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
         }
 
         int drifted_pos = drifted_tree_pos_list[i];
-        shared_ptr<adaptive_tree> drifted_tree = adaptive_trees[drifted_pos];
-        shared_ptr<adaptive_tree> swap_tree;
+        shared_ptr<pearl_tree> drifted_tree = static_pointer_cast<pearl_tree>(foreground_trees[drifted_pos]);
+        shared_ptr<pearl_tree> swap_tree;
 
         drifted_tree->update_kappa(actual_labels, class_count);
 
@@ -164,10 +168,10 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
                 graph_switch->update_reuse_count(0);
             }
 
-            shared_ptr<adaptive_tree> bg_tree = drifted_tree->bg_adaptive_tree;
+            shared_ptr<pearl_tree> bg_tree = drifted_tree->bg_pearl_tree;
 
             if (!bg_tree) {
-                swap_tree = make_adaptive_tree(tree_pool.size());
+                swap_tree = make_pearl_tree(tree_pool.size());
 
             } else {
                 bg_tree->update_kappa(actual_labels, class_count);
@@ -220,7 +224,7 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
         cur_state.insert(swap_tree->tree_pool_id);
 
         // replace drifted_tree with swap tree
-        adaptive_trees[drifted_pos] = swap_tree;
+        foreground_trees[drifted_pos] = swap_tree;
 
         drifted_tree->reset();
     }
@@ -268,8 +272,8 @@ int pro_pearl::find_last_actual_drift_point() {
         return -1;
     }
 
-    shared_ptr<adaptive_tree> drifted_tree = backtrack_drifted_trees.front();
-    shared_ptr<adaptive_tree> swapped_tree = backtrack_swapped_trees.front();
+    shared_ptr<pearl_tree> drifted_tree = backtrack_drifted_trees.front();
+    shared_ptr<pearl_tree> swapped_tree = backtrack_swapped_trees.front();
     long drifted_point = drifted_points.front();
 
     backtrack_drifted_trees.pop_front();
@@ -317,4 +321,14 @@ int pro_pearl::find_last_actual_drift_point() {
 
 bool pro_pearl::get_drift_detected() {
     return drift_detected;
+}
+
+bool pro_pearl::compare_kappa_arf(shared_ptr<arf_tree>& tree1,
+                                  shared_ptr<arf_tree>& tree2) {
+    shared_ptr<pearl_tree> pearl_tree1 =
+        static_pointer_cast<pearl_tree>(tree1);
+    shared_ptr<pearl_tree> pearl_tree2 =
+        static_pointer_cast<pearl_tree>(tree2);
+
+    return pearl_tree1->kappa < pearl_tree2->kappa;
 }
