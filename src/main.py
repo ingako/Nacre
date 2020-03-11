@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 
 import argparse
 import math
@@ -18,8 +18,7 @@ path = r'../'
 if path not in sys.path:
     sys.path.append(path)
 
-from build.pro_pearl import pearl
-from build.pro_pearl import pro_pearl
+from build.pro_pearl import pearl, pro_pearl
 
 formatter = logging.Formatter('%(message)s')
 
@@ -133,7 +132,7 @@ if __name__ == '__main__':
     if args.enable_state_graph:
         args.enable_state_adaption = True
 
-    potential_file = f"../data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
+    potential_file = f"../third_party/PEARL/data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
     potential_pre_gen_file = f"../data/{args.generator}/{args.generator}-{args.generator_seed}.csv"
 
     # prepare data

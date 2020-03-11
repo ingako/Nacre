@@ -4,6 +4,14 @@ from collections import deque
 import numpy as np
 from sklearn.metrics import cohen_kappa_score
 
+import sys
+path = r'../'
+
+if path not in sys.path:
+    sys.path.append(path)
+
+from build.pro_pearl import pearl, pro_pearl
+
 class Evaluator:
 
     @staticmethod
@@ -15,6 +23,10 @@ class Evaluator:
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
+        if isinstance(classifier, pearl):
+            print("is an instance of pearl, turn on log_size")
+
+        log_size = isinstance(classifier, pearl)
 
         metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size")
 
@@ -24,12 +36,26 @@ class Evaluator:
             if not classifier.get_next_instance():
                 break
 
-            correct += 1 if classifier.process() else 0
+            # test
+            prediction = classifier.predict()
+
+            actual_label = classifier.get_cur_instance_label()
+            if prediction == actual_label:
+                correct += 1
+
+            window_actual_labels.append(actual_label)
+            window_predicted_labels.append(prediction)
+
+            # classifier.handle_drift(count)
 
             if count % sample_freq == 0 and count != 0:
                 accuracy = correct / sample_freq
-                candidate_tree_size = classifier.get_candidate_tree_group_size()
-                tree_pool_size = classifier.get_tree_pool_size()
+
+                candidate_tree_size = 0
+                tree_pool_size = 60
+                if log_size:
+                    candidate_tree_size = classifier.get_candidate_tree_group_size()
+                    tree_pool_size = classifier.get_tree_pool_size()
 
                 print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size}")
                 metrics_logger.info(f"{count},{accuracy}," \
@@ -38,6 +64,11 @@ class Evaluator:
                 correct = 0
                 window_actual_labels = []
                 window_predicted_labels = []
+
+            # train
+            classifier.train()
+
+            classifier.delete_cur_instance()
 
     @staticmethod
     def prequential_evaluation_proactive_(classifier,
