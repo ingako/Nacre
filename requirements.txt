@@ -3,3 +3,4 @@ sklearn
 scikit-multiflow
 grpcio
 grpcio-tools
+cmake
