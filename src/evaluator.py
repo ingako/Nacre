@@ -116,10 +116,21 @@ class Evaluator:
             stub = seqprediction_pb2_grpc.PredictorStub(channel)
 
             for count in range(0, max_samples):
+                print("get_next_instance")
                 if not classifier.get_next_instance():
                     break
+                print("get_next_instance completed")
 
-                correct += 1 if classifier.process() else 0
+                # test
+                prediction = classifier.predict()
+
+                actual_label = classifier.get_cur_instance_label()
+                if prediction == actual_label:
+                    correct += 1
+                print("get cur instance completed")
+
+                window_actual_labels.append(actual_label)
+                window_predicted_labels.append(prediction)
 
                 if classifier.drift_detected:
                     if classifier.is_state_graph_stable():
@@ -208,3 +219,8 @@ class Evaluator:
                     correct = 0
                     window_actual_labels = []
                     window_predicted_labels = []
+
+                # train
+                classifier.train()
+
+                classifier.delete_cur_instance()
