@@ -5,10 +5,11 @@ import numpy as np
 from sklearn.metrics import cohen_kappa_score
 
 import sys
-path = r'../'
+paths = [r'..', r'../third_party']
 
-if path not in sys.path:
-    sys.path.append(path)
+for path in paths:
+    if path not in sys.path:
+        sys.path.append(path)
 
 from build.pro_pearl import pearl, pro_pearl
 
@@ -119,7 +120,15 @@ class Evaluator:
                 if not classifier.get_next_instance():
                     break
 
-                correct += 1 if classifier.process() else 0
+                # test
+                prediction = classifier.predict()
+
+                actual_label = classifier.get_cur_instance_label()
+                if prediction == actual_label:
+                    correct += 1
+
+                window_actual_labels.append(actual_label)
+                window_predicted_labels.append(prediction)
 
                 if classifier.drift_detected:
                     if classifier.is_state_graph_stable():
@@ -208,3 +217,7 @@ class Evaluator:
                     correct = 0
                     window_actual_labels = []
                     window_predicted_labels = []
+                # train
+                classifier.train()
+
+                # classifier.delete_cur_instance()
