@@ -35,6 +35,10 @@ pro_pearl::pro_pearl(int num_trees,
 
 int pro_pearl::predict() {
 
+    if (foreground_trees.empty()) {
+        pearl::init();
+    }
+
     int actual_label = instance->getLabel();
 
     int num_classes = instance->getNumberClasses();
@@ -135,7 +139,7 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
 
         int drifted_pos = drifted_tree_pos_list[i];
         shared_ptr<pearl_tree> drifted_tree = static_pointer_cast<pearl_tree>(foreground_trees[drifted_pos]);
-        shared_ptr<pearl_tree> swap_tree;
+        shared_ptr<pearl_tree> swap_tree = nullptr;
 
         drifted_tree->update_kappa(actual_labels, class_count);
 
