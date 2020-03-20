@@ -12,7 +12,8 @@ pro_pearl::pro_pearl(int num_trees,
                      double cd_kappa_threshold,
                      double reuse_rate_upper_bound,
                      double warning_delta,
-                     double drift_delta) :
+                     double drift_delta,
+                     double drift_tension) :
         pearl(num_trees,
               max_num_candidate_trees,
               repo_size,
@@ -33,10 +34,27 @@ pro_pearl::pro_pearl(int num_trees,
     backtrack_swapped_trees.push_back(nullptr);
 }
 
+void pro_pearl::init() {
+    tree_pool = vector<shared_ptr<pearl_tree>>(num_trees);
+
+    for (int i = 0; i < num_trees; i++) {
+        tree_pool[i] = make_pearl_tree(i);
+        foreground_trees.push_back(tree_pool[i]);
+    }
+}
+
+shared_ptr<pearl_tree> pro_pearl::make_pearl_tree(int tree_pool_id) {
+    return make_shared<pearl_tree>(tree_pool_id,
+                                   kappa_window_size,
+                                   warning_delta,
+                                   drift_delta,
+                                   drift_tension);
+}
+
 int pro_pearl::predict() {
 
     if (foreground_trees.empty()) {
-        pearl::init();
+        init();
     }
 
     int actual_label = instance->getLabel();
@@ -325,6 +343,14 @@ int pro_pearl::find_last_actual_drift_point() {
 
 bool pro_pearl::get_drift_detected() {
     return drift_detected;
+}
+
+void pro_pearl::set_expected_drift_prob(double p) {
+    shared_ptr<pearl_tree> cur_tree = nullptr;
+    for (int i = 0; i < num_trees; i++) {
+        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
+        cur_tree->set_expected_drift_prob(p);
+    }
 }
 
 bool pro_pearl::compare_kappa_arf(shared_ptr<arf_tree>& tree1,

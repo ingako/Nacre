@@ -19,18 +19,23 @@ class pro_pearl : public pearl {
                   double cd_kappa_threshold,
                   double reuse_rate_upper_bound,
                   double warning_delta,
-                  double drift_delta);
+                  double drift_delta,
+                  double drift_tension);
 
         virtual int predict();
         virtual void adapt_state(const vector<int>& drifted_tree_pos_list);
+        virtual shared_ptr<pearl_tree> make_pearl_tree(int tree_pool_id);
+        virtual void init();
 
         int find_last_actual_drift_point();
         void select_candidate_trees_proactively();
         void adapt_state_proactively();
         bool get_drift_detected();
+        void set_expected_drift_prob(double p);
 
     private:
 
+        double drift_tension = 0.5;
         bool drift_detected = false;
         int num_max_backtrack_instances = 100000000; // TODO
         int num_instances_seen = 0;

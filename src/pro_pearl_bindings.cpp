@@ -59,6 +59,7 @@ PYBIND11_MODULE(pro_pearl, m) {
                       double,
                       double,
                       double,
+                      double,
                       double>())
         .def_property_readonly("drift_detected", &pro_pearl::get_drift_detected)
         .def("find_last_actual_drift_point", &pro_pearl::find_last_actual_drift_point)
