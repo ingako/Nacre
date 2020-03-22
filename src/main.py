@@ -69,6 +69,9 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--drift",
                         dest="drift_delta", default=0.00001, type=float,
                         help="delta value for drift detector")
+    parser.add_argument("--drift_tension",
+                        dest="drift_tension", default=-1.0, type=float,
+                        help="delta value for drift tension")
     parser.add_argument("--max_samples",
                         dest="max_samples", default=200000, type=int,
                         help="total number of samples")
@@ -251,7 +254,8 @@ if __name__ == '__main__':
                               args.cd_kappa_threshold,
                               args.reuse_rate_upper_bound,
                               args.warning_delta,
-                              args.drift_delta)
+                              args.drift_delta,
+                              args.drift_tension)
             eval_func = Evaluator.prequential_evaluation_proactive
 
         else:
