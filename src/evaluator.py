@@ -1,5 +1,6 @@
 import copy
 from collections import deque
+import math
 
 import numpy as np
 from sklearn.metrics import cohen_kappa_score
@@ -162,15 +163,15 @@ class Evaluator:
 
         # proactive drift point prediction
         drift_interval_seq_len = 8
-        next_adapt_state_points = deque()
-        predicted_drift_points = deque()
+        next_adapt_state_loc = -1
+        predicted_drift_loc = -1
         drift_interval_sequence = deque(maxlen=drift_interval_seq_len)
         last_actual_drift_point = 0
         num_request = 0
 
         metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size")
 
-        classifier.init_data_source(stream);
+        classifier.init_data_source(stream)
 
         with grpc.insecure_channel('localhost:50051') as channel:
 
@@ -179,6 +180,11 @@ class Evaluator:
             for count in range(0, max_samples):
                 if not classifier.get_next_instance():
                     break
+
+                if classifier.is_state_graph_stable():
+                    t_r = (count - last_actual_drift_point) / (predicted_drift_loc - last_actual_drift_point)
+                    expected_drift_prob = 1 - math.sin(math.pi * t_r)
+                    classifier.set_expected_drift_prob(expected_drift_prob)
 
                 # test
                 prediction = classifier.predict()
@@ -193,20 +199,21 @@ class Evaluator:
                 if classifier.drift_detected:
                     if classifier.is_state_graph_stable():
                         # predict the next drift point
-                        temp = drift_interval_sequence.popleft()
+                        drift_interval_sequence.popleft()
+
                         response = stub.predict(
                                             seqprediction_pb2
                                                 .SequenceMessage(seqId=count,
                                                                  seq=drift_interval_sequence)
                                         )
-                        drift_interval_sequence.appendleft(temp)
-
                         # print(f"Predicted next drift point: {response.seq[0]}")
                         interval = fit_predict(clusterer, response.seq[0])
-                        predicted_drift_points.append(interval)
+
+                        predicted_drift_loc = count + interval
+                        next_adapt_state_loc = count + interval + 50
 
                         drift_interval_sequence.append(interval)
-                        last_actual_drift_point += interval
+                        last_actual_drift_point = count
 
                     else:
                         # find actual drift point at num_instances_before
@@ -238,31 +245,18 @@ class Evaluator:
 
 
                 if classifier.is_state_graph_stable():
-                    if len(predicted_drift_points) > 0:
-                        predicted_drift_points[0] -= 1
-                        if predicted_drift_points[0] <= 0:
-                            predicted_drift_points.popleft()
+                    if count >= predicted_drift_loc and predicted_drift_loc != -1:
+                        predicted_drift_loc = -1
+                        if not classifier.drift_detected:
+                            classifier.select_candidate_trees_proactively()
 
-                            if not classifier.drift_detected:
-                                classifier.select_candidate_trees_proactively()
-
-                                offset = 0
-                                if len(next_adapt_state_points) > 0:
-                                    offset = next_adapt_state_points[-1]
-                                next_adapt_state_points.append(51 - offset)
-
-                    if len(next_adapt_state_points) > 0:
-                        next_adapt_state_points[0] -= 1
-                        if next_adapt_state_points[0] <= 0:
-                            next_adapt_state_points.popleft()
-
-                            if not classifier.drift_detected:
-                                classifier.adapt_state_proactively()
+                    if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
+                        next_adapt_state_loc = -1
+                        if not classifier.drift_detected:
+                            classifier.adapt_state_proactively()
                 else:
-                    if len(predicted_drift_points) > 0:
-                        predicted_drift_points = deque()
-                    if len(next_adapt_state_points) > 0:
-                        next_adapt_state_points = deque()
+                    predicted_drift_loc = -1
+                    next_adapt_state_loc = -1
 
 
                 if count % sample_freq == 0 and count != 0:
@@ -277,6 +271,7 @@ class Evaluator:
                     correct = 0
                     window_actual_labels = []
                     window_predicted_labels = []
+
                 # train
                 classifier.train()
 
