@@ -121,6 +121,8 @@ void pro_pearl::adapt_state_proactively() {
     for (int i = 0; i < foreground_trees.size(); i++) {
         cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
 
+        double bound = compute_adaptive_bound(cur_tree->get_variance(), kappa_window_size, drift_delta);
+
         if (cur_tree->kappa < candidate_trees.back()->kappa) {
             cur_tree.reset();
             candidate_trees.back()->reset();
@@ -266,6 +268,16 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
     } else {
         drift_detected = false;
     }
+}
+
+double pro_pearl::compute_adaptive_bound(double variance, double window_size, double delta) {
+    double m = 1.0 / ((1.0 / window_size) + (1.0 / window_size));
+    delta = delta / (window_size * 2);
+
+    double epsilon = sqrt((2 / m * variance * log(2 / delta)))
+                        + 2 / (3 * m) * log(2 / delta);
+
+    return epsilon;
 }
 
 int pro_pearl::find_last_actual_drift_point() {

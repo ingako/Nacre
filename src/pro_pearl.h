@@ -44,6 +44,7 @@ class pro_pearl : public pearl {
         deque<shared_ptr<pearl_tree>> backtrack_swapped_trees;
         deque<long> drifted_points;
 
+        double compute_adaptive_bound(double variance, double window_size, double delta);
         static bool compare_kappa_arf(shared_ptr<arf_tree>& tree1,
                                       shared_ptr<arf_tree>& tree2);
 
