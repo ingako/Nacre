@@ -86,13 +86,17 @@ public class SeqPredictionServer {
 
     static class PredictorImpl extends PredictorGrpc.PredictorImplBase {
 
-        CPTPredictor cpt;
+        List<CPTPredictor> cptList;
         DefaultProfile profile;
+        int numTrees = 60;
 
         private void init() {
             // initializing the CPT predictor
-            if (cpt == null) {
-                cpt = new CPTPredictor();
+            if (cptList == null) {
+                cptList = new ArrayList<>();
+                for (int i = 0; i < numTrees; i++) {
+                    cptList.add(new CPTPredictor());
+                }
 
                 // setting the experiment parameters
                 profile = new DefaultProfile();
@@ -118,6 +122,9 @@ public class SeqPredictionServer {
 
             // prepare sequence
             Sequence seq = getSequenceFromRequest(request);
+            int treeId = request.getTreeId();
+
+            CPTPredictor cpt = cptList.get(treeId);
 
             // predicting a sequence
             Sequence predicted = cpt.Predict(seq);
@@ -142,6 +149,9 @@ public class SeqPredictionServer {
 
             // prepare sequence
             Sequence seq = getSequenceFromRequest(request);
+            int treeId = request.getTreeId();
+
+            CPTPredictor cpt = cptList.get(treeId);
 
             List<Sequence> trainingSet = new ArrayList<Sequence>();
             trainingSet.add(seq);
@@ -152,6 +162,18 @@ public class SeqPredictionServer {
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }
-    }
 
+        @Override
+        public void setNumTrees(seqprediction.SetNumTreesMessage request,
+                                io.grpc.stub.StreamObserver<seqprediction.SetNumTreesMessage> responseObserver) {
+
+            numTrees = request.getNumTrees();
+            System.out.println("set numTrees=" + numTrees);
+
+            SetNumTreesMessage reply = SetNumTreesMessage.newBuilder().setResult(true).build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
+
+    }
 }
