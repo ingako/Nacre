@@ -66,5 +66,6 @@ PYBIND11_MODULE(pro_pearl, m) {
         .def("select_candidate_trees_proactively", &pro_pearl::select_candidate_trees_proactively)
         .def("adapt_state_proactively", &pro_pearl::adapt_state_proactively)
         .def("predict", &pro_pearl::predict)
-        .def("adapt_state", &pro_pearl::adapt_state);
+        .def("adapt_state", &pro_pearl::adapt_state)
+        .def("set_expected_drift_prob", &pro_pearl::set_expected_drift_prob);
 }
