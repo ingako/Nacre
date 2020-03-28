@@ -177,6 +177,8 @@ class Evaluator:
 
             stub = seqprediction_pb2_grpc.PredictorStub(channel)
 
+            stub.setNumTrees(seqprediction_pb2.SetNumTreesMessage(numTrees=60))
+
             for count in range(0, max_samples):
                 if not classifier.get_next_instance():
                     break
@@ -204,6 +206,7 @@ class Evaluator:
                         response = stub.predict(
                                             seqprediction_pb2
                                                 .SequenceMessage(seqId=count,
+                                                                 treeId=0,
                                                                  seq=drift_interval_sequence)
                                         )
                         # print(f"Predicted next drift point: {response.seq[0]}")
@@ -231,18 +234,18 @@ class Evaluator:
 
                                 # train CPT
                                 if len(drift_interval_sequence) >= drift_interval_seq_len:
-
                                     num_request += 1
                                     print(f"gRPC train request {num_request}: {drift_interval_sequence}")
                                     if stub.train(
                                                 seqprediction_pb2
-                                                    .SequenceMessage(seqId=num_request, seq=drift_interval_sequence)
+                                                    .SequenceMessage(seqId=num_request,
+                                                                     treeId=0,
+                                                                     seq=drift_interval_sequence)
                                             ).result:
                                         pass
                                     else:
                                         print("CPT training failed")
                                         exit()
-
 
                 if classifier.is_state_graph_stable():
                     if count >= predicted_drift_loc and predicted_drift_loc != -1:
