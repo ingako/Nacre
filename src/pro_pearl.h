@@ -32,6 +32,7 @@ class pro_pearl : public pearl {
         void adapt_state_proactively();
         bool get_drift_detected();
         void set_expected_drift_prob(double p);
+        vector<int> get_drifted_tree_positions();
 
     private:
 
@@ -43,6 +44,7 @@ class pro_pearl : public pearl {
         deque<shared_ptr<pearl_tree>> backtrack_drifted_trees;
         deque<shared_ptr<pearl_tree>> backtrack_swapped_trees;
         deque<long> drifted_points;
+        vector<int> drifted_tree_positions;
 
         static bool compare_kappa_arf(shared_ptr<arf_tree>& tree1,
                                       shared_ptr<arf_tree>& tree2);

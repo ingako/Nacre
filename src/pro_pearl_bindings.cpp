@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <PEARL/src/cpp/pearl.h>
 #include "pro_pearl.h"
@@ -62,6 +63,8 @@ PYBIND11_MODULE(pro_pearl, m) {
                       double,
                       double>())
         .def_property_readonly("drift_detected", &pro_pearl::get_drift_detected)
+        .def("get_drifted_tree_positions", &pro_pearl::get_drifted_tree_positions)
+        .def("tree_transition", &pearl::tree_transition)
         .def("find_last_actual_drift_point", &pro_pearl::find_last_actual_drift_point)
         .def("select_candidate_trees_proactively", &pro_pearl::select_candidate_trees_proactively)
         .def("adapt_state_proactively", &pro_pearl::adapt_state_proactively)
