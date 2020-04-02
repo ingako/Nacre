@@ -63,7 +63,7 @@ int pro_pearl::predict() {
     vector<int> votes(num_classes, 0);
 
     drift_detected = false;
-    drifted_tree_positions.clear();
+    actual_drifted_tree_indices.clear();
 
     pearl::predict_with_state_adaption(votes, actual_label);
 
@@ -172,7 +172,7 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
             && candidate_trees.back()->kappa
                 - drifted_tree->kappa >= cd_kappa_threshold) {
 
-            drifted_tree_positions.push_back(drifted_tree_pos_list[i]);
+            actual_drifted_tree_indices.push_back(drifted_tree_pos_list[i]);
 
             candidate_trees.back()->is_candidate = false;
             swap_tree = candidate_trees.back();
@@ -225,7 +225,7 @@ void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
                 swap_tree->tree_pool_id = tree_pool.size();
                 tree_pool.push_back(swap_tree);
 
-                drifted_tree_positions.push_back(drifted_tree_pos_list[i]);
+                actual_drifted_tree_indices.push_back(drifted_tree_pos_list[i]);
                 if (!best_swapped_tree) {
                     first_drifted_tree = drifted_tree;
                     best_swapped_tree = swap_tree;
@@ -351,8 +351,8 @@ bool pro_pearl::get_drift_detected() {
     return drift_detected;
 }
 
-vector<int> pro_pearl::get_drifted_tree_positions() {
-    return drifted_tree_positions;
+vector<int> pro_pearl::get_actual_drifted_tree_indices() {
+    return actual_drifted_tree_indices;
 }
 
 void pro_pearl::set_expected_drift_prob(double p) {
