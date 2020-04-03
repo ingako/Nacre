@@ -67,74 +67,17 @@ int pro_pearl::predict() {
 
     pearl::predict_with_state_adaption(votes, actual_label);
 
+
+
+
     // if (backtrack_instances.size() >= num_max_backtrack_instances) {
     //     delete backtrack_instances[0];
     //     backtrack_instances.pop_front();
     // }
     backtrack_instances.push_back(instance);
-
-    pearl::train();
     num_instances_seen++;
 
     return pearl::vote(votes);
-}
-
-void pro_pearl::select_candidate_trees_proactively() {
-    int class_count = instance->getNumberClasses();
-    shared_ptr<pearl_tree> cur_tree = nullptr;
-
-    // sort foreground trees by kappa
-    for (int i = 0; i < foreground_trees.size(); i++) {
-        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
-        cur_tree->update_kappa(actual_labels, class_count);
-    }
-    sort(foreground_trees.begin(), foreground_trees.end(), compare_kappa_arf);
-
-    // TODO find the worst trees and mark as warning detected
-    vector<int> warning_tree_pos_list;
-    for (int i = 0; i < 10; i++) {
-        warning_tree_pos_list.push_back(i);
-    }
-
-    pearl::select_candidate_trees(warning_tree_pos_list);
-}
-
-void pro_pearl::adapt_state_proactively() {
-    if (candidate_trees.size() == 0) {
-        return;
-    }
-
-    int class_count = instance->getNumberClasses();
-    shared_ptr<pearl_tree> cur_tree = nullptr;
-
-    // sort foreground trees by kappa
-    for (int i = 0; i < foreground_trees.size(); i++) {
-        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
-        cur_tree->update_kappa(actual_labels, class_count);
-    }
-    sort(foreground_trees.begin(), foreground_trees.end(), compare_kappa_arf);
-
-    // sort candiate trees by kappa
-    for (int i = 0; i < candidate_trees.size(); i++) {
-        candidate_trees[i]->update_kappa(actual_labels, class_count);
-    }
-    sort(candidate_trees.begin(), candidate_trees.end(), compare_kappa);
-
-    for (int i = 0; i < foreground_trees.size(); i++) {
-        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
-
-        if (cur_tree->kappa < candidate_trees.back()->kappa
-                && cur_tree->has_actual_drift()) {
-            cur_tree.reset();
-            candidate_trees.back()->reset();
-
-            foreground_trees[i] = candidate_trees.back();
-            candidate_trees.pop_back();
-
-        } else {
-            break;
-        }
-    }
 }
 
 void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
