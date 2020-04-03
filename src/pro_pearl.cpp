@@ -80,6 +80,17 @@ int pro_pearl::predict() {
     return pearl::vote(votes);
 }
 
+bool pro_pearl::has_actual_drift(int tree_idx) {
+    shared_ptr<pearl_tree> cur_tree
+        = static_pointer_cast<pearl_tree>(foreground_trees[tree_idx]);
+
+    if (cur_tree->has_actual_drift()) {
+        return true;
+    }
+
+    return false;
+}
+
 void pro_pearl::adapt_state(const vector<int>& drifted_tree_pos_list) {
 
     int class_count = instance->getNumberClasses();
