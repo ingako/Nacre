@@ -28,11 +28,10 @@ class pro_pearl : public pearl {
         virtual void init();
 
         int find_last_actual_drift_point();
-        void select_candidate_trees_proactively();
-        void adapt_state_proactively();
         bool get_drift_detected();
         void set_expected_drift_prob(double p);
         vector<int> get_actual_drifted_tree_indices();
+        bool has_actual_drift(int tree_idx);
 
     private:
 
