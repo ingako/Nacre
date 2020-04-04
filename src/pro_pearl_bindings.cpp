@@ -62,11 +62,10 @@ PYBIND11_MODULE(pro_pearl, m) {
                       double,
                       double,
                       double>())
-        .def_property_readonly("drift_detected", &pro_pearl::get_drift_detected)
-        .def("get_actual_drifted_tree_indices", &pro_pearl::get_actual_drifted_tree_indices)
         .def("tree_transition", &pearl::tree_transition)
         .def("find_last_actual_drift_point", &pro_pearl::find_last_actual_drift_point)
         .def("predict", &pro_pearl::predict)
-        .def("adapt_state", &pro_pearl::adapt_state)
+        .def("adapt_state_with_proactivity", &pro_pearl::adapt_state_with_proactivity)
+        .def("update_drifted_tree_indices", &pro_pearl::update_drifted_tree_indices)
         .def("set_expected_drift_prob", &pro_pearl::set_expected_drift_prob);
 }
