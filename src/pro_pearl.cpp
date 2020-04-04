@@ -62,16 +62,70 @@ int pro_pearl::predict() {
 
     potential_drifted_tree_indices.clear();
 
-    pearl::predict_with_state_adaption(votes, actual_label);
+    predict_with_state_adaption(votes, actual_label);
 
-    // if (backtrack_instances.size() >= num_max_backtrack_instances) {
-    //     delete backtrack_instances[0];
-    //     backtrack_instances.pop_front();
-    // }
     backtrack_instances.push_back(instance);
     num_instances_seen++;
 
     return pearl::vote(votes);
+}
+
+
+// foreground trees make predictions, update votes, keep track of actual labbels
+// find warning trees, select candidate trees
+// find drifted trees, update potential_drifted_tree_indices
+// candidate trees make predictions
+void pro_pearl::predict_with_state_adaption(vector<int>& votes, int actual_label) {
+    // keep track of actual labels for candidate tree evaluations
+    if (actual_labels.size() >= kappa_window_size) {
+        actual_labels.pop_front();
+    }
+    actual_labels.push_back(actual_label);
+
+    int predicted_label;
+    vector<int> warning_tree_pos_list;
+
+    shared_ptr<pearl_tree> cur_tree = nullptr;
+
+    for (int i = 0; i < num_trees; i++) {
+        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
+
+        predicted_label = cur_tree->predict(*instance, true);
+
+        votes[predicted_label]++;
+        int error_count = (int)(actual_label != predicted_label);
+
+        bool warning_detected_only = false;
+
+        // detect warning
+        if (detect_change(error_count, cur_tree->warning_detector)) {
+            warning_detected_only = false;
+
+            cur_tree->bg_pearl_tree = make_pearl_tree(-1);
+            cur_tree->warning_detector->resetChange();
+        }
+
+        // detect drift
+        if (detect_change(error_count, cur_tree->drift_detector)) {
+            warning_detected_only = true;
+            potential_drifted_tree_indices.insert(i);
+
+            cur_tree->drift_detector->resetChange();
+        }
+
+        if (warning_detected_only) {
+            warning_tree_pos_list.push_back(i);
+        }
+    }
+
+    for (int i = 0; i < candidate_trees.size(); i++) {
+        candidate_trees[i]->predict(*instance, true);
+    }
+
+    // if warnings are detected, find closest state and update candidate_trees list
+    if (warning_tree_pos_list.size() > 0) {
+        select_candidate_trees(warning_tree_pos_list);
+    }
 }
 
 bool pro_pearl::has_actual_drift(int tree_idx) {

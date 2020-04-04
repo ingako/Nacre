@@ -62,7 +62,8 @@ PYBIND11_MODULE(pro_pearl, m) {
                       double,
                       double,
                       double>())
-        .def("tree_transition", &pearl::tree_transition)
+        .def("select_candidate_trees", &pearl::select_candidate_trees)
+        .def("has_actual_drift", &pro_pearl::has_actual_drift)
         .def("find_last_actual_drift_point", &pro_pearl::find_last_actual_drift_point)
         .def("predict", &pro_pearl::predict)
         .def("adapt_state_with_proactivity", &pro_pearl::adapt_state_with_proactivity)

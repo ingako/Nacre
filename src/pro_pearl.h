@@ -42,7 +42,7 @@ class pro_pearl : public pearl {
 
         static bool compare_kappa_arf(shared_ptr<arf_tree>& tree1,
                                       shared_ptr<arf_tree>& tree2);
-
+        virtual void predict_with_state_adaption(vector<int>& votes, int actual_label);
 };
 
 #endif
