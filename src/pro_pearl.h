@@ -23,27 +23,22 @@ class pro_pearl : public pearl {
                   double drift_tension);
 
         virtual int predict();
-        virtual void adapt_state(const vector<int>& drifted_tree_pos_list);
         virtual shared_ptr<pearl_tree> make_pearl_tree(int tree_pool_id);
         virtual void init();
 
-        int find_last_actual_drift_point();
-        bool get_drift_detected();
+        int find_last_actual_drift_point(int tree_idx);
         void set_expected_drift_prob(double p);
-        vector<int> get_actual_drifted_tree_indices();
         bool has_actual_drift(int tree_idx);
+        vector<int> adapt_state_with_proactivity();
+        void update_drifted_tree_indices(const vector<int>& tree_indices);
 
     private:
 
         double drift_tension = 0.5;
-        bool drift_detected = false;
         int num_max_backtrack_instances = 100000000; // TODO
         int num_instances_seen = 0;
         deque<Instance*> backtrack_instances;
-        deque<shared_ptr<pearl_tree>> backtrack_drifted_trees;
-        deque<shared_ptr<pearl_tree>> backtrack_swapped_trees;
-        deque<long> drifted_points;
-        vector<int> actual_drifted_tree_indices;
+        set<int> potential_drifted_tree_indices;
 
         static bool compare_kappa_arf(shared_ptr<arf_tree>& tree1,
                                       shared_ptr<arf_tree>& tree2);
