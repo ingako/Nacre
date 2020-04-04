@@ -200,92 +200,84 @@ class Evaluator:
                 window_actual_labels.append(actual_label)
                 window_predicted_labels.append(prediction)
 
-                drifted_tree_positions = classifier.get_drifted_tree_positions()
-                if len(drifted_tree_positions) > 0:
-                    # print(f"drifted_tree_positions: {drifted_tree_positions}")
+                # check if hit predicted drift locations
+                transition_tree_pos_list = []
+                adapt_state_tree_pos_list = []
 
-                    if classifier.is_state_graph_stable():
-                        # predict the next drift point
+                for idx in range(num_trees):
+                    predicted_drift_loc = predicted_drift_locs[idx]
+                    # find potential drift trees for candidate selection
+                    if count >= predicted_drift_loc and predicted_drift_loc != -1:
+                        predicted_drift_locs[idx] = -1
+                        # TODO if not classifier.actual_drifted_trees[idx]:
+                        transition_tree_pos_list.append(idx)
 
-                        for idx in drifted_tree_positions:
-                            if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
-                                drift_interval_sequences[idx].popleft()
+                    # find trees with actual drifts
+                    next_adapt_state_loc = next_adapt_state_locs[idx]
+                    if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
+                        next_adapt_state_locs[idx] = -1
+                        if not classifier.has_actual_drift(idx):
+                            adapt_state_tree_pos_list.append(idx)
 
-                        response = stub.predict(
-                                            seqprediction_pb2
-                                                .SequenceMessage(seqId=count,
-                                                                 treeId=drifted_tree_positions[0],
-                                                                 seq=drift_interval_sequences[0]))
+                if len(transition_tree_pos_list) > 0:
+                    # select candidate_trees
+                    classifier.select_candidate_trees(transition_tree_pos_list)
+                if len(adapt_state_tree_pos_list) > 0:
+                    # update actual drifted trees
+                    classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
+
+                # adapt state for both drifted tree and predicted drifted trees
+                actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()
+                # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
+
+                # Generate new sequences for the actual drifted trees
+                for idx in actual_drifted_tree_indices:
+                    # find actual drift point at num_instances_before
+                    num_instances_before = classifier.find_last_actual_drift_point(idx)
+
+                    if num_instances_before > -1:
+                        interval = count - num_instances_before - last_actual_drift_points[idx]
+                        if interval < 0:
+                            print("Failed to find the actual drift point")
+                            # exit()
+                        else:
+                            interval = fit_predict(clusterer, interval)
+                            drift_interval_sequences[idx].append(interval)
+                            last_actual_drift_points[idx] = count - num_instances_before
+
+                    # train CPT with the new sequence
+                    if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
+                        num_request += 1
+                        print(f"gRPC train request {num_request}: {drift_interval_sequences[idx]}")
+                        if stub.train(seqprediction_pb2
+                                          .SequenceMessage(seqId=num_request,
+                                                           treeId=idx,
+                                                           seq=drift_interval_sequences[idx])).result:
+                            pass
+                        else:
+                            print("CPT training failed")
+                            exit()
+
+                    # predict the next drift points
+                    if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
+                        drift_interval_sequences[idx].popleft()
+
+                        response = stub.predict(seqprediction_pb2
+                                                    .SequenceMessage(seqId=count,
+                                                                     treeId=idx,
+                                                                     seq=drift_interval_sequences[idx]))
 
                         # print(f"Predicted next drift point: {response.seq[0]}")
                         if len(response.seq) > 0:
                             interval = fit_predict(clusterer, response.seq[0])
 
-                            for idx in drifted_tree_positions:
-                                predicted_drift_locs[idx] = count + interval
-                                next_adapt_state_locs[idx] = count + interval + 50
+                            predicted_drift_locs[idx] = count + interval
+                            next_adapt_state_locs[idx] = count + interval + 50
 
-                                drift_interval_sequences[idx].append(interval)
-                                last_actual_drift_points[idx] = count
+                            drift_interval_sequences[idx].append(interval)
+                            last_actual_drift_points[idx] = count
 
-                    else:
-                        # find actual drift point at num_instances_before
-                        num_instances_before = classifier.find_last_actual_drift_point()
-
-                        for idx in drifted_tree_positions:
-                            if num_instances_before > -1:
-                                interval = count - num_instances_before - last_actual_drift_points[idx]
-                                if interval < 0:
-                                    print("Failed to find the actual drift point")
-                                    # exit()
-                                else:
-                                    interval = fit_predict(clusterer, interval)
-                                    drift_interval_sequences[idx].append(interval)
-                                    last_actual_drift_points[idx] = count - num_instances_before
-
-                                    # train CPT
-                                    if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
-                                        num_request += 1
-                                        print(f"gRPC train request {num_request}: {drift_interval_sequences[idx]}")
-                                        if stub.train(
-                                                    seqprediction_pb2
-                                                        .SequenceMessage(seqId=num_request,
-                                                                         treeId=idx,
-                                                                         seq=drift_interval_sequences[idx])
-                                                ).result:
-                                            pass
-                                        else:
-                                            print("CPT training failed")
-                                            exit()
-
-                if classifier.is_state_graph_stable():
-                    transition_tree_pos_list = []
-                    adapt_state_tree_pos_list = []
-
-                    for idx in range(num_trees):
-                        predicted_drift_loc = predicted_drift_locs[idx]
-                        if count >= predicted_drift_loc and predicted_drift_loc != -1:
-                            predicted_drift_locs[idx] = -1
-                            if not classifier.drift_detected:
-                                transition_tree_pos_list.append(idx)
-
-                        next_adapt_state_loc = next_adapt_state_locs[idx]
-                        if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
-                            next_adapt_state_locs[idx] = -1
-                            if not classifier.drift_detected:
-                                adapt_state_tree_pos_list.append(idx)
-
-                    if len(transition_tree_pos_list) > 0:
-                        classifier.tree_transition(transition_tree_pos_list)
-                    if len(adapt_state_tree_pos_list) > 0:
-                        classifier.adapt_state(adapt_state_tree_pos_list)
-
-                else:
-                    for idx in range(num_trees):
-                        predicted_drift_locs[idx] = -1
-                        next_adapt_state_locs[idx] = -1
-
-
+                # log performance
                 if count % sample_freq == 0 and count != 0:
                     accuracy = correct / sample_freq
                     candidate_tree_size = classifier.get_candidate_tree_group_size()
