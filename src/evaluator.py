@@ -125,10 +125,12 @@ class Evaluator:
                 if not classifier.get_next_instance():
                     break
 
-                # if classifier.is_state_graph_stable():
-                #     t_r = (count - last_actual_drift_point) / (predicted_drift_loc - last_actual_drift_point)
-                #     expected_drift_prob = 1 - math.sin(math.pi * t_r)
-                #     classifier.set_expected_drift_prob(expected_drift_prob)
+                # set expected drift probability
+                for idx in range(num_trees):
+                    if predicted_drift_locs[idx] > 0:
+                        t_r = (count - last_actual_drift_points[idx]) / (predicted_drift_locs[idx] - last_actual_drift_points[idx])
+                        expected_drift_prob = 1 - math.sin(math.pi * t_r)
+                        classifier.set_expected_drift_prob(idx, expected_drift_prob)
 
                 # test
                 prediction = classifier.predict()
