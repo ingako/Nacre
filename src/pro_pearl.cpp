@@ -324,12 +324,10 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
     return -1;
 }
 
-void pro_pearl::set_expected_drift_prob(double p) {
+void pro_pearl::set_expected_drift_prob(int tree_idx, double p) {
     shared_ptr<pearl_tree> cur_tree = nullptr;
-    for (int i = 0; i < num_trees; i++) {
-        cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
-        cur_tree->set_expected_drift_prob(p);
-    }
+    cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[tree_idx]);
+    cur_tree->set_expected_drift_prob(p);
 }
 
 bool pro_pearl::compare_kappa_arf(shared_ptr<arf_tree>& tree1,
