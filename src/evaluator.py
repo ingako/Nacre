@@ -21,7 +21,8 @@ class Evaluator:
                                    stream,
                                    max_samples,
                                    sample_freq,
-                                   metrics_logger):
+                                   metrics_logger,
+                                   seq_logger,
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
@@ -77,7 +78,8 @@ class Evaluator:
                                          stream,
                                          max_samples,
                                          sample_freq,
-                                         metrics_logger):
+                                         metrics_logger,
+                                         seq_logger,
         num_trees = 60
         np.random.seed(0)
 
@@ -126,11 +128,11 @@ class Evaluator:
                     break
 
                 # set expected drift probability
-                for idx in range(num_trees):
-                    if predicted_drift_locs[idx] > 0:
-                        t_r = (count - last_actual_drift_points[idx]) / (predicted_drift_locs[idx] - last_actual_drift_points[idx])
-                        expected_drift_prob = 1 - math.sin(math.pi * t_r)
-                        classifier.set_expected_drift_prob(idx, expected_drift_prob)
+                # for idx in range(num_trees):
+                #     if predicted_drift_locs[idx] > 0:
+                #         t_r = (count - last_actual_drift_points[idx]) / (predicted_drift_locs[idx] - last_actual_drift_points[idx])
+                #         expected_drift_prob = 1 - math.sin(math.pi * t_r)
+                #         classifier.set_expected_drift_prob(idx, expected_drift_prob)
 
                 # test
                 prediction = classifier.predict()
@@ -190,7 +192,7 @@ class Evaluator:
                     # train CPT with the new sequence
                     if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
                         num_request += 1
-                        print(f"gRPC train request {num_request}: {drift_interval_sequences[idx]}")
+                        seq_logger.info(f"Tree {idx}: {drift_interval_sequences[idx]}")
                         if stub.train(seqprediction_pb2
                                           .SequenceMessage(seqId=num_request,
                                                            treeId=idx,

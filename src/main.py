@@ -135,7 +135,8 @@ if __name__ == '__main__':
     if args.enable_state_graph:
         args.enable_state_adaption = True
 
-    potential_file = f"../third_party/PEARL/data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
+    # potential_file = f"../third_party/PEARL/data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
+    potential_file = f"../data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
     potential_pre_gen_file = f"../data/{args.generator}/{args.generator}-{args.generator_seed}.csv"
 
     # prepare data
@@ -239,6 +240,7 @@ if __name__ == '__main__':
 
     metrics_logger = setup_logger('metrics', metric_output_file)
     process_logger = setup_logger('process', f'{result_directory}/processes-{args.generator_seed}.info')
+    seq_logger = setup_logger('seq', f'{result_directory}/seq-{args.generator_seed}.log')
 
     if args.cpp:
         if args.proactive:
@@ -285,7 +287,8 @@ if __name__ == '__main__':
               stream=stream,
               max_samples=args.max_samples,
               sample_freq=args.sample_freq,
-              metrics_logger=metrics_logger)
+              metrics_logger=metrics_logger,
+              seq_logger=seq_logger)
     elapsed = time.process_time() - start
 
     with open(f"{time_output_file}", 'w') as out:
