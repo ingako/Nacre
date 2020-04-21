@@ -289,6 +289,7 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
     int swap_correct = 0;
     double drifted_tree_accuracy = 0.0;
     double swapped_tree_accuracy = 0.0;
+    int edit_distance = 0;
 
     deque<int> drifted_tree_predictions;
     deque<int> swapped_tree_predictions;
@@ -302,20 +303,20 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
         int drift_predicted_label = drifted_tree->predict(*backtrack_instances[i], false);
         int swap_predicted_label = swapped_tree->predict(*backtrack_instances[i], false);
 
-        int actual_label = instance->getLabel();
-        drifted_tree_predictions.push_back((int) (drift_predicted_label == actual_label));
-        swapped_tree_predictions.push_back((int) (swap_predicted_label == actual_label));
-
-        drift_correct += drifted_tree_predictions.back();
-        swap_correct += swapped_tree_predictions.back();
+        drifted_tree_predictions.push_back(drift_predicted_label);
+        swapped_tree_predictions.push_back(swap_predicted_label);
+        if (drift_predicted_label == swap_predicted_label) {
+            edit_distance += 1;
+        }
 
         if (drifted_tree_predictions.size() >= window) {
-            drift_correct -= drifted_tree_predictions.front();
-            swap_correct -= swapped_tree_predictions.front();
+            if (drifted_tree_predictions.front() != swapped_tree_predictions.front()) {
+                edit_distance -= 1;
+            }
             drifted_tree_predictions.pop_front();
             swapped_tree_predictions.pop_front();
 
-            if (drift_correct >= swap_correct) {
+            if (edit_distance == 5) {
                 return backtrack_instances.size() - i;
             }
         }
@@ -323,6 +324,58 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
 
     return -1;
 }
+
+// int pro_pearl::find_last_actual_drift_point_(int tree_idx) {
+//     if (backtrack_instances.size() > num_max_backtrack_instances) {
+//         LOG("backtrack_instances has too many data instance");
+//         exit(1);
+//     }
+//
+//     shared_ptr<pearl_tree> swapped_tree;
+//     swapped_tree = static_pointer_cast<pearl_tree>(foreground_trees[tree_idx]);
+//     shared_ptr<pearl_tree> drifted_tree = swapped_tree->replaced_tree;
+//
+//     if (!drifted_tree || !swapped_tree) {
+//         cout << "Empty drifted or swapped tree" << endl;
+//         return -1;
+//     }
+//
+//     int window = 25; // TODO
+//     int edit_distance = 0;
+//
+//     deque<int> drifted_tree_predictions;
+//     deque<int> swapped_tree_predictions;
+//
+//     for (int i = backtrack_instances.size() - 1; i >= 0; i--) {
+//         if (!backtrack_instances[i]) {
+//             LOG("cur instance is null!");
+//             exit(1);
+//         }
+//
+//         int drift_predicted_label = drifted_tree->predict(*backtrack_instances[i], false);
+//         int swap_predicted_label = swapped_tree->predict(*backtrack_instances[i], false);
+//
+//         int actual_label = instance->getLabel();
+//         drifted_tree_predictions.push_back((int) (drift_predicted_label == actual_label));
+//         swapped_tree_predictions.push_back((int) (swap_predicted_label == actual_label));
+//
+//         drift_correct += drifted_tree_predictions.back();
+//         swap_correct += swapped_tree_predictions.back();
+//
+//         if (drifted_tree_predictions.size() >= window) {
+//             drift_correct -= drifted_tree_predictions.front();
+//             swap_correct -= swapped_tree_predictions.front();
+//             drifted_tree_predictions.pop_front();
+//             swapped_tree_predictions.pop_front();
+//
+//             if (edit_distance >= 4) {
+//                 return backtrack_instances.size() - i;
+//             }
+//         }
+//     }
+//
+//     return -1;
+// }
 
 void pro_pearl::set_expected_drift_prob(int tree_idx, double p) {
     shared_ptr<pearl_tree> cur_tree = nullptr;
