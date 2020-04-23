@@ -112,6 +112,7 @@ class Evaluator:
         predicted_drift_locs = [-1 for v in range(num_trees)]
         drift_interval_sequences = [deque(maxlen=drift_interval_seq_len) for v in range(num_trees)]
         last_actual_drift_points = [0 for v in range(num_trees)]
+        backtrack_locs = [-1 for v in range(num_trees)]
 
         metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size")
 
@@ -144,38 +145,19 @@ class Evaluator:
                 window_actual_labels.append(actual_label)
                 window_predicted_labels.append(prediction)
 
-                # check if hit predicted drift locations
-                transition_tree_pos_list = []
-                adapt_state_tree_pos_list = []
-
-                for idx in range(num_trees):
-                    predicted_drift_loc = predicted_drift_locs[idx]
-                    # find potential drift trees for candidate selection
-                    if count >= predicted_drift_loc and predicted_drift_loc != -1:
-                        predicted_drift_locs[idx] = -1
-                        # TODO if not classifier.actual_drifted_trees[idx]:
-                        transition_tree_pos_list.append(idx)
-
-                    # find trees with actual drifts
-                    next_adapt_state_loc = next_adapt_state_locs[idx]
-                    if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
-                        next_adapt_state_locs[idx] = -1
-                        if not classifier.has_actual_drift(idx):
-                            adapt_state_tree_pos_list.append(idx)
-
-                if len(transition_tree_pos_list) > 0:
-                    # select candidate_trees
-                    classifier.select_candidate_trees(transition_tree_pos_list)
-                if len(adapt_state_tree_pos_list) > 0:
-                    # update actual drifted trees
-                    classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
-
-                # adapt state for both drifted tree and predicted drifted trees
-                actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()
-                # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
-
                 # Generate new sequences for the actual drifted trees
-                for idx in actual_drifted_tree_indices:
+                # for idx in actual_drifted_tree_indices:
+                for idx in range(num_trees):
+
+                    if backtrack_locs[idx] == -1:
+                        continue
+
+                    backtrack_locs[idx] -= 1
+                    if backtrack_locs[idx] != 0:
+                        continue
+
+                    backtrack_locs[idx] = -1
+
                     # find actual drift point at num_instances_before
                     num_instances_before = classifier.find_last_actual_drift_point(idx)
 
@@ -220,6 +202,38 @@ class Evaluator:
 
                             drift_interval_sequences[idx].append(interval)
                             last_actual_drift_points[idx] = count
+
+                # check if hit predicted drift locations
+                transition_tree_pos_list = []
+                adapt_state_tree_pos_list = []
+
+                for idx in range(num_trees):
+                    predicted_drift_loc = predicted_drift_locs[idx]
+                    # find potential drift trees for candidate selection
+                    if count >= predicted_drift_loc and predicted_drift_loc != -1:
+                        predicted_drift_locs[idx] = -1
+                        # TODO if not classifier.actual_drifted_trees[idx]:
+                        transition_tree_pos_list.append(idx)
+
+                    # find trees with actual drifts
+                    next_adapt_state_loc = next_adapt_state_locs[idx]
+                    if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
+                        next_adapt_state_locs[idx] = -1
+                        if not classifier.has_actual_drift(idx):
+                            adapt_state_tree_pos_list.append(idx)
+
+                if len(transition_tree_pos_list) > 0:
+                    # select candidate_trees
+                    classifier.select_candidate_trees(transition_tree_pos_list)
+                if len(adapt_state_tree_pos_list) > 0:
+                    # update actual drifted trees
+                    classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
+
+                # adapt state for both drifted tree and predicted drifted trees
+                actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()
+                # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
+                for idx in actual_drifted_tree_indices:
+                    backtrack_locs[idx] = 500
 
                 # log performance
                 if count % sample_freq == 0 and count != 0:
