@@ -22,7 +22,7 @@ class Evaluator:
                                    max_samples,
                                    sample_freq,
                                    metrics_logger,
-                                   seq_logger,
+                                   seq_logger):
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
@@ -79,7 +79,7 @@ class Evaluator:
                                          max_samples,
                                          sample_freq,
                                          metrics_logger,
-                                         seq_logger,
+                                         seq_logger):
         num_trees = 60
         np.random.seed(0)
 
