@@ -146,17 +146,16 @@ class Evaluator:
                 window_predicted_labels.append(prediction)
 
                 # Generate new sequences for the actual drifted trees
-                # for idx in actual_drifted_tree_indices:
-                for idx in range(num_trees):
+                for idx in classifier.get_stable_tree_indices():
 
-                    if backtrack_locs[idx] == -1:
-                        continue
+                    # if backtrack_locs[idx] == -1:
+                    #     continue
 
-                    backtrack_locs[idx] -= 1
-                    if backtrack_locs[idx] != 0:
-                        continue
+                    # backtrack_locs[idx] -= 1
+                    # if backtrack_locs[idx] != 0:
+                    #     continue
 
-                    backtrack_locs[idx] = -1
+                    # backtrack_locs[idx] = -1
 
                     # find actual drift point at num_instances_before
                     num_instances_before = classifier.find_last_actual_drift_point(idx)

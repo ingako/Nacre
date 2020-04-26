@@ -68,5 +68,6 @@ PYBIND11_MODULE(pro_pearl, m) {
         .def("predict", &pro_pearl::predict)
         .def("adapt_state_with_proactivity", &pro_pearl::adapt_state_with_proactivity)
         .def("update_drifted_tree_indices", &pro_pearl::update_drifted_tree_indices)
-        .def("set_expected_drift_prob", &pro_pearl::set_expected_drift_prob);
+        .def("set_expected_drift_prob", &pro_pearl::set_expected_drift_prob)
+        .def("get_stable_tree_indices", &pro_pearl::get_stable_tree_indices);
 }

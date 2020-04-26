@@ -34,10 +34,12 @@ pro_pearl::pro_pearl(int num_trees,
 
 void pro_pearl::init() {
     tree_pool = vector<shared_ptr<pearl_tree>>(num_trees);
+    stability_detectors = vector<unique_ptr<HT::ADWIN>>();
 
     for (int i = 0; i < num_trees; i++) {
         tree_pool[i] = make_pearl_tree(i);
         foreground_trees.push_back(tree_pool[i]);
+        stability_detectors.push_back(make_unique<HT::ADWIN>(warning_delta));
     }
 }
 
@@ -61,6 +63,7 @@ int pro_pearl::predict() {
     vector<int> votes(num_classes, 0);
 
     potential_drifted_tree_indices.clear();
+    stable_tree_indices.clear();
 
     predict_with_state_adaption(votes, actual_label);
 
@@ -115,6 +118,14 @@ void pro_pearl::predict_with_state_adaption(vector<int>& votes, int actual_label
 
         if (warning_detected_only) {
             warning_tree_pos_list.push_back(i);
+        }
+
+        // detect stability
+        int correct_count = (int)(actual_label == predicted_label);
+        if (cur_tree->replaced_tree
+                && detect_stability(correct_count, stability_detectors[i])) {
+            stability_detectors[i] = make_unique<HT::ADWIN>(warning_delta);
+            stable_tree_indices.push_back(i);
         }
     }
 
@@ -334,6 +345,7 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
     shared_ptr<pearl_tree> swapped_tree;
     swapped_tree = static_pointer_cast<pearl_tree>(foreground_trees[tree_idx]);
     shared_ptr<pearl_tree> drifted_tree = swapped_tree->replaced_tree;
+    swapped_tree->replaced_tree = nullptr;
 
     if (!drifted_tree || !swapped_tree) {
         cout << "Empty drifted or swapped tree" << endl;
@@ -394,4 +406,27 @@ bool pro_pearl::compare_kappa_arf(shared_ptr<arf_tree>& tree1,
         static_pointer_cast<pearl_tree>(tree2);
 
     return pearl_tree1->kappa < pearl_tree2->kappa;
+}
+
+bool pro_pearl::detect_stability(int error_count,
+                                 unique_ptr<HT::ADWIN>& detector) {
+
+    double old_error = detector->getEstimation();
+    bool error_change = detector->setInput(error_count);
+
+    if (!error_change) {
+       return false;
+    }
+
+    if (old_error > detector->getEstimation()) {
+        // error is decreasing
+        // cout << "error is decreasing" << endl;
+        return true;
+    }
+
+    return false;
+}
+
+vector<int> pro_pearl::get_stable_tree_indices() {
+    return stable_tree_indices;
 }
