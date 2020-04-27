@@ -39,10 +39,10 @@ public class SeqPredictionServer {
     private static final Logger logger = Logger.getLogger(SeqPredictionServer.class.getName());
 
     private Server server;
+    static int port = 50051;
 
     private void start() throws IOException {
         /* The port on which the server should run */
-        int port = 50051;
         server = ServerBuilder.forPort(port)
             .addService(new PredictorImpl())
             .build()
@@ -80,6 +80,11 @@ public class SeqPredictionServer {
      */
     public static void main(String[] args) throws IOException, InterruptedException {
         final SeqPredictionServer server = new SeqPredictionServer();
+
+        if (args.length > 0) {
+            port = Integer.parseInt(args[0]);
+        }
+
         server.start();
         server.blockUntilShutdown();
     }
