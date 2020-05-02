@@ -127,6 +127,10 @@ if __name__ == '__main__':
                         help="The reuse rate threshold for switching from "
                              "pattern matching to graph transition")
 
+    parser.add_argument("--proactive_percentage",
+                        dest="proactive_percentage", default=100, type=int,
+                        help="The percentage of triggering proactive drift detection")
+
     args = parser.parse_args()
 
     if args.reuse_rate_upper_bound < args.reuse_rate_lower_bound:
@@ -136,7 +140,9 @@ if __name__ == '__main__':
         args.enable_state_adaption = True
 
     # potential_file = f"../third_party/PEARL/data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
-    potential_file = f"../data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
+    # potential_file = f"../data/{args.dataset_name}/{args.dataset_name}.{args.data_format}"
+    # potential_file = f"../data/agrawal/gradual/5/0.arff"
+    potential_file = f"../data/agrawal/abrupt/5/0.arff"
     potential_pre_gen_file = f"../data/{args.generator}/{args.generator}-{args.generator_seed}.csv"
 
     # prepare data
@@ -178,7 +184,7 @@ if __name__ == '__main__':
         result_directory = f"{result_directory}-noise"
 
     if args.proactive:
-        result_directory = f"{result_directory}-pro"
+        result_directory = f"{result_directory}-pro-{args.proactive_percentage}"
 
     metric_output_file = "result"
     time_output_file = "time"
@@ -282,13 +288,22 @@ if __name__ == '__main__':
         print("Non-CPP version is unsupported")
         exit()
 
+
+    expected_drift_locs = []
+    # expected_drift_locs_log = "../data/agrawal/abrupt/5/drift-0.log"
+    # with open(f"{expected_drift_locs_log}", 'r') as f:
+    #     expected_drift_locs.append(int(f.readline()))
+    # print(expected_drift_locs)
+
     start = time.process_time()
     eval_func(classifier=pearl,
               stream=stream,
               max_samples=args.max_samples,
               sample_freq=args.sample_freq,
+              expected_drift_locs=expected_drift_locs,
               metrics_logger=metrics_logger,
-              seq_logger=seq_logger)
+              seq_logger=seq_logger,
+              proactive_percentage=args.proactive_percentage)
     elapsed = time.process_time() - start
 
     with open(f"{time_output_file}", 'w') as out:

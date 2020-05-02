@@ -1,6 +1,7 @@
 import copy
 from collections import deque
 import math
+from random import randrange
 
 import numpy as np
 from sklearn.metrics import cohen_kappa_score
@@ -21,8 +22,10 @@ class Evaluator:
                                    stream,
                                    max_samples,
                                    sample_freq,
+                                   expected_drift_locs,
                                    metrics_logger,
-                                   seq_logger):
+                                   seq_logger,
+                                   proactive_percentage):
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
@@ -78,8 +81,10 @@ class Evaluator:
                                          stream,
                                          max_samples,
                                          sample_freq,
+                                         expected_drift_locs,
                                          metrics_logger,
-                                         seq_logger):
+                                         seq_logger,
+                                         proactive_percentage):
         num_trees = 60
         np.random.seed(0)
 
@@ -113,6 +118,8 @@ class Evaluator:
         drift_interval_sequences = [deque(maxlen=drift_interval_seq_len) for v in range(num_trees)]
         last_actual_drift_points = [0 for v in range(num_trees)]
         backtrack_locs = [-1 for v in range(num_trees)]
+
+        expected_drift_loc_indices = [0 for i in range(num_trees)]
 
         metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size")
 
@@ -226,7 +233,9 @@ class Evaluator:
                     classifier.select_candidate_trees(transition_tree_pos_list)
                 if len(adapt_state_tree_pos_list) > 0:
                     # update actual drifted trees
-                    classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
+                    rand_num = randrange(100)
+                    if rand_num < proactive_percentage:
+                        classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
 
                 # adapt state for both drifted tree and predicted drifted trees
                 actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()
