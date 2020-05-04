@@ -42,7 +42,11 @@ if __name__ == '__main__':
     parser.add_argument("--proactive_percentage",
                         dest="proactive_percentage", default=100, type=int,
                         help="The percentage of triggering proactive drift detection")
+    parser.add_argument("--grpc_port",
+                        dest="grpc_port", default=50051, type=int,
+                        help="Port number for the sequence prediction grpc service")
 
+    # real world datasets
     parser.add_argument("--dataset_name",
                         dest="dataset_name", default="", type=str,
                         help="dataset name")
@@ -150,7 +154,7 @@ if __name__ == '__main__':
     else:
         data_file_path = f"../third_party/PEARL/data/" \
                          f"{args.dataset_name}/{args.dataset_name}.{args.data_format}"
-        result_directory = args.generator
+        result_directory = args.dataset_name
 
     if not os.path.isfile(data_file_path):
         print(f"Cannot locate file at {data_file_path}")
@@ -174,7 +178,8 @@ if __name__ == '__main__':
 
     metric_output_file = "result"
     if args.proactive:
-        metric_output_file = f"{result_directory}/{metric_output_file}-pro-{args.generator_seed}.csv"
+        metric_output_file = f"{result_directory}/" \
+                             f"{metric_output_file}-pro-{args.proactive_percentage}-{args.generator_seed}.csv"
     else:
         metric_output_file = f"{result_directory}/{metric_output_file}-{args.generator_seed}.csv"
 
@@ -260,4 +265,5 @@ if __name__ == '__main__':
               expected_drift_locs=expected_drift_locs,
               metrics_logger=metrics_logger,
               seq_logger=seq_logger,
-              proactive_percentage=args.proactive_percentage)
+              proactive_percentage=args.proactive_percentage,
+              grpc_port=args.grpc_port)

@@ -26,7 +26,8 @@ class Evaluator:
                                expected_drift_locs,
                                metrics_logger,
                                seq_logger,
-                               proactive_percentage):
+                               proactive_percentage,
+                               grpc_port):
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
@@ -87,7 +88,8 @@ class Evaluator:
                                          expected_drift_locs,
                                          metrics_logger,
                                          seq_logger,
-                                         proactive_percentage):
+                                         proactive_percentage,
+                                         grpc_port):
         num_trees = 60
         np.random.seed(0)
 
@@ -129,7 +131,8 @@ class Evaluator:
 
         classifier.init_data_source(stream)
 
-        with grpc.insecure_channel('localhost:50051') as channel:
+        with grpc.insecure_channel(f'localhost:{grpc_port}') as channel:
+            print(f'Sequence prediction server is listening at {grpc_port}...')
 
             stub = seqprediction_pb2_grpc.PredictorStub(channel)
 
