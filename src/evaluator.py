@@ -18,14 +18,14 @@ from build.pro_pearl import pearl, pro_pearl
 class Evaluator:
 
     @staticmethod
-    def prequential_evaluation_cpp(classifier,
-                                   stream,
-                                   max_samples,
-                                   sample_freq,
-                                   expected_drift_locs,
-                                   metrics_logger,
-                                   seq_logger,
-                                   proactive_percentage):
+    def prequential_evaluation(classifier,
+                               stream,
+                               max_samples,
+                               sample_freq,
+                               expected_drift_locs,
+                               metrics_logger,
+                               seq_logger,
+                               proactive_percentage):
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
