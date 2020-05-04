@@ -4,7 +4,6 @@ import argparse
 import math
 import random
 import pathlib
-import time
 import logging
 import os.path
 
@@ -174,13 +173,10 @@ if __name__ == '__main__':
     pathlib.Path(result_directory).mkdir(parents=True, exist_ok=True)
 
     metric_output_file = "result"
-    time_output_file = "time"
     if args.proactive:
         metric_output_file = f"{result_directory}/{metric_output_file}-pro-{args.generator_seed}.csv"
-        time_output_file = f"{result_directory}/{time_output_file}-pro-{args.generator_seed}.log"
     else:
         metric_output_file = f"{result_directory}/{metric_output_file}-{args.generator_seed}.csv"
-        time_output_file = f"{result_directory}/{time_output_file}-{args.generator_seed}.log"
 
 
     configs = (
@@ -257,7 +253,6 @@ if __name__ == '__main__':
     #     expected_drift_locs.append(int(f.readline()))
     # print(expected_drift_locs)
 
-    start = time.process_time()
     eval_func(classifier=pearl,
               stream=data_file_path,
               max_samples=args.max_samples,
@@ -266,7 +261,3 @@ if __name__ == '__main__':
               metrics_logger=metrics_logger,
               seq_logger=seq_logger,
               proactive_percentage=args.proactive_percentage)
-    elapsed = time.process_time() - start
-
-    with open(f"{time_output_file}", 'w') as out:
-        out.write(str(elapsed) + '\n')

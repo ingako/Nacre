@@ -2,6 +2,7 @@ import copy
 from collections import deque
 import math
 from random import randrange
+import time
 
 import numpy as np
 from sklearn.metrics import cohen_kappa_score
@@ -34,7 +35,8 @@ class Evaluator:
 
         log_size = isinstance(classifier, pearl)
 
-        metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size")
+        metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size,time")
+        start_time = time.process_time()
 
         classifier.init_data_source(stream);
 
@@ -54,8 +56,14 @@ class Evaluator:
 
             # classifier.handle_drift(count)
 
+            # train
+            classifier.train()
+
+            classifier.delete_cur_instance()
+
             if count % sample_freq == 0 and count != 0:
                 accuracy = correct / sample_freq
+                elapsed_time = time.process_time() - start_time
 
                 candidate_tree_size = 0
                 tree_pool_size = 60
@@ -63,18 +71,13 @@ class Evaluator:
                     candidate_tree_size = classifier.get_candidate_tree_group_size()
                     tree_pool_size = classifier.get_tree_pool_size()
 
-                print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size}")
+                print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size},{elapsed_time}")
                 metrics_logger.info(f"{count},{accuracy}," \
-                                    f"{candidate_tree_size},{tree_pool_size}")
+                                    f"{candidate_tree_size},{tree_pool_size},{elapsed_time}")
 
                 correct = 0
                 window_actual_labels = []
                 window_predicted_labels = []
-
-            # train
-            classifier.train()
-
-            classifier.delete_cur_instance()
 
     @staticmethod
     def prequential_evaluation_proactive(classifier,
@@ -121,7 +124,8 @@ class Evaluator:
 
         expected_drift_loc_indices = [0 for i in range(num_trees)]
 
-        metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size")
+        metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size,time")
+        start_time = time.process_time()
 
         classifier.init_data_source(stream)
 
@@ -243,21 +247,22 @@ class Evaluator:
                 for idx in actual_drifted_tree_indices:
                     backtrack_locs[idx] = 500
 
+                # train
+                classifier.train()
+
+                # classifier.delete_cur_instance()
+
                 # log performance
                 if count % sample_freq == 0 and count != 0:
                     accuracy = correct / sample_freq
                     candidate_tree_size = classifier.get_candidate_tree_group_size()
                     tree_pool_size = classifier.get_tree_pool_size()
+                    elapsed_time = time.process_time() - start_time
 
-                    print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size}")
+                    print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size},{str(elapsed_time)}")
                     metrics_logger.info(f"{count},{accuracy}," \
-                                        f"{candidate_tree_size},{tree_pool_size}")
+                                        f"{candidate_tree_size},{tree_pool_size},{str(elapsed_time)}")
 
                     correct = 0
                     window_actual_labels = []
                     window_predicted_labels = []
-
-                # train
-                classifier.train()
-
-                # classifier.delete_cur_instance()
