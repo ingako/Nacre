@@ -22,7 +22,7 @@ class pro_pearl : public pearl {
                   double drift_delta,
                   double drift_tension);
 
-        virtual int predict();
+        virtual void train();
         virtual shared_ptr<pearl_tree> make_pearl_tree(int tree_pool_id);
         virtual void init();
 
