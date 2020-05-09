@@ -48,7 +48,8 @@ shared_ptr<pearl_tree> pro_pearl::make_pearl_tree(int tree_pool_id) {
                                    kappa_window_size,
                                    warning_delta,
                                    drift_delta,
-                                   drift_tension);
+                                   drift_tension,
+                                   mrand);
 }
 
 void pro_pearl::train() {
