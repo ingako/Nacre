@@ -17,7 +17,7 @@ path = r'../'
 if path not in sys.path:
     sys.path.append(path)
 
-from build.pro_pearl import pearl, pro_pearl
+from build.pro_pearl import adaptive_random_forest, pearl, pro_pearl
 
 formatter = logging.Formatter('%(message)s')
 
@@ -97,6 +97,9 @@ if __name__ == '__main__':
     parser.add_argument("--kappa_window",
                         dest="kappa_window", default=50, type=int,
                         help="number of instances must be seen for calculating kappa")
+    parser.add_argument("--poisson_lambda",
+                        dest="poisson_lambda", default=6, type=int,
+                        help="lambda for poisson distribution")
     parser.add_argument("--random_state",
                         dest="random_state", default=0, type=int,
                         help="Seed used for adaptive hoeffding tree")
@@ -217,8 +220,37 @@ if __name__ == '__main__':
     process_logger = setup_logger('process', f'{result_directory}/processes-{args.generator_seed}.info')
     seq_logger = setup_logger('seq', f'{result_directory}/seq-{args.generator_seed}.log')
 
-    if args.proactive:
-        pearl = pro_pearl(args.num_trees,
+    if not args.enable_state_adaption and not args.enable_state_graph:
+        print("init adaptive_random_forest")
+        pearl = adaptive_random_forest(args.num_trees,
+                                       arf_max_features,
+                                       args.poisson_lambda,
+                                       args.random_state,
+                                       args.warning_delta,
+                                       args.drift_delta)
+        eval_func = Evaluator.prequential_evaluation
+    else:
+        if args.proactive:
+            pearl = pro_pearl(args.num_trees,
+                              args.max_num_candidate_trees,
+                              repo_size,
+                              args.edit_distance_threshold,
+                              args.kappa_window,
+                              args.lossy_window_size,
+                              args.reuse_window_size,
+                              arf_max_features,
+                              args.poisson_lambda,
+                              args.random_state,
+                              args.bg_kappa_threshold,
+                              args.cd_kappa_threshold,
+                              args.reuse_rate_upper_bound,
+                              args.warning_delta,
+                              args.drift_delta,
+                              args.drift_tension)
+            eval_func = Evaluator.prequential_evaluation_proactive
+
+        else:
+            pearl = pearl(args.num_trees,
                           args.max_num_candidate_trees,
                           repo_size,
                           args.edit_distance_threshold,
@@ -226,31 +258,16 @@ if __name__ == '__main__':
                           args.lossy_window_size,
                           args.reuse_window_size,
                           arf_max_features,
+                          args.poisson_lambda,
+                          args.random_state,
                           args.bg_kappa_threshold,
                           args.cd_kappa_threshold,
                           args.reuse_rate_upper_bound,
                           args.warning_delta,
                           args.drift_delta,
-                          args.drift_tension)
-        eval_func = Evaluator.prequential_evaluation_proactive
-
-    else:
-        pearl = pearl(args.num_trees,
-                      args.max_num_candidate_trees,
-                      repo_size,
-                      args.edit_distance_threshold,
-                      args.kappa_window,
-                      args.lossy_window_size,
-                      args.reuse_window_size,
-                      arf_max_features,
-                      args.bg_kappa_threshold,
-                      args.cd_kappa_threshold,
-                      args.reuse_rate_upper_bound,
-                      args.warning_delta,
-                      args.drift_delta,
-                      args.enable_state_adaption,
-                      args.enable_state_graph)
-        eval_func = Evaluator.prequential_evaluation
+                          args.enable_state_adaption,
+                          args.enable_state_graph)
+            eval_func = Evaluator.prequential_evaluation
 
     expected_drift_locs = []
     # expected_drift_locs_log = "../data/agrawal/abrupt/5/drift-0.log"
