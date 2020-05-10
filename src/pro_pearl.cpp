@@ -8,6 +8,8 @@ pro_pearl::pro_pearl(int num_trees,
                      int lossy_window_size,
                      int reuse_window_size,
                      int arf_max_features,
+                     int lambda,
+                     int seed,
                      double bg_kappa_threshold,
                      double cd_kappa_threshold,
                      double reuse_rate_upper_bound,
@@ -22,6 +24,8 @@ pro_pearl::pro_pearl(int num_trees,
               lossy_window_size,
               reuse_window_size,
               arf_max_features,
+              lambda,
+              seed,
               bg_kappa_threshold,
               cd_kappa_threshold,
               reuse_rate_upper_bound,
@@ -77,7 +81,7 @@ void pro_pearl::train() {
     shared_ptr<pearl_tree> cur_tree = nullptr;
 
     for (int i = 0; i < num_trees; i++) {
-        std::poisson_distribution<int> poisson_distr(6);
+        std::poisson_distribution<int> poisson_distr(lambda);
         int weight = poisson_distr(mrand);
         instance->setWeight(weight);
 

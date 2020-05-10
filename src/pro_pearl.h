@@ -15,6 +15,8 @@ class pro_pearl : public pearl {
                   int lossy_window_size,
                   int reuse_window_size,
                   int arf_max_features,
+                  int lambda,
+                  int seed,
                   double bg_kappa_threshold,
                   double cd_kappa_threshold,
                   double reuse_rate_upper_bound,
