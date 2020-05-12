@@ -26,7 +26,6 @@ class Evaluator:
                                expected_drift_locs,
                                metrics_logger,
                                seq_logger,
-                               proactive_percentage,
                                grpc_port):
         correct = 0
         window_actual_labels = []
@@ -88,7 +87,6 @@ class Evaluator:
                                          expected_drift_locs,
                                          metrics_logger,
                                          seq_logger,
-                                         proactive_percentage,
                                          grpc_port):
         num_trees = 60
         np.random.seed(0)
@@ -211,7 +209,7 @@ class Evaluator:
                             interval = fit_predict(clusterer, response.seq[0])
 
                             predicted_drift_locs[idx] = count + interval
-                            next_adapt_state_locs[idx] = count + interval + 50
+                            next_adapt_state_locs[idx] = count + interval + 50 # TODO currently set to the same as kappa window
 
                             drift_interval_sequences[idx].append(interval)
                             last_actual_drift_points[idx] = count
@@ -240,9 +238,7 @@ class Evaluator:
                     classifier.select_candidate_trees(transition_tree_pos_list)
                 if len(adapt_state_tree_pos_list) > 0:
                     # update actual drifted trees
-                    rand_num = randrange(100)
-                    if rand_num < proactive_percentage:
-                        classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
+                    classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
 
                 # adapt state for both drifted tree and predicted drifted trees
                 actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()

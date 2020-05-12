@@ -39,9 +39,9 @@ if __name__ == '__main__':
                         dest="proactive", action="store_true",
                         help="Enable ProPearl")
     parser.set_defaults(proactive=False)
-    parser.add_argument("--proactive_percentage",
-                        dest="proactive_percentage", default=100, type=int,
-                        help="The percentage of triggering proactive drift detection")
+    # parser.add_argument("--proactive_percentage",
+    #                     dest="proactive_percentage", default=100, type=int,
+    #                     help="The percentage of triggering proactive drift detection")
     parser.add_argument("--grpc_port",
                         dest="grpc_port", default=50051, type=int,
                         help="Port number for the sequence prediction grpc service")
@@ -182,9 +182,10 @@ if __name__ == '__main__':
     metric_output_file = "result"
     if args.proactive:
         metric_output_file = f"{result_directory}/" \
-                             f"{metric_output_file}-pro-{args.proactive_percentage}-{args.generator_seed}.csv"
+                             f"{metric_output_file}-pro-{args.generator_seed}-{args.poisson_lambda}.csv"
     else:
-        metric_output_file = f"{result_directory}/{metric_output_file}-{args.generator_seed}.csv"
+        metric_output_file = f"{result_directory}/" \
+                             f"{metric_output_file}-{args.generator_seed}-{args.poisson_lambda}.csv"
 
 
     configs = (
@@ -282,5 +283,4 @@ if __name__ == '__main__':
               expected_drift_locs=expected_drift_locs,
               metrics_logger=metrics_logger,
               seq_logger=seq_logger,
-              proactive_percentage=args.proactive_percentage,
               grpc_port=args.grpc_port)
