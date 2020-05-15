@@ -31,11 +31,13 @@ message SequenceMessage {
     int32 seqId = 1;
     int32 treeId = 2;
     repeated int32 seq = 3;
+    double runtimeInSeconds = 4;
 }
 
 message TrainResponse {
     int32 treeId = 1;
     bool result = 2;
+    double runtimeInSeconds = 3;
 }
 
 message SetNumTreesMessage {

@@ -115,6 +115,7 @@ class Evaluator:
         # proactive drift point prediction
         drift_interval_seq_len = 8
         num_request = 0
+        cpt_runtime = 0
 
         next_adapt_state_locs = [-1 for v in range(num_trees)]
         predicted_drift_locs = [-1 for v in range(num_trees)]
@@ -186,11 +187,12 @@ class Evaluator:
                     if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
                         num_request += 1
                         seq_logger.info(f"Tree {idx}: {drift_interval_sequences[idx]}")
-                        if stub.train(seqprediction_pb2
+                        cpt_response = stub.train(seqprediction_pb2
                                           .SequenceMessage(seqId=num_request,
                                                            treeId=idx,
-                                                           seq=drift_interval_sequences[idx])).result:
-                            pass
+                                                           seq=drift_interval_sequences[idx]))
+                        if cpt_response.result:
+                            cpt_runtime += cpt_response.runtimeInSeconds
                         else:
                             print("CPT training failed")
                             exit()
@@ -203,6 +205,7 @@ class Evaluator:
                                                     .SequenceMessage(seqId=count,
                                                                      treeId=idx,
                                                                      seq=drift_interval_sequences[idx]))
+                        cpt_runtime += cpt_response.runtimeInSeconds
 
                         # print(f"Predicted next drift point: {response.seq[0]}")
                         if len(response.seq) > 0:
@@ -256,7 +259,7 @@ class Evaluator:
                     accuracy = correct / sample_freq
                     candidate_tree_size = classifier.get_candidate_tree_group_size()
                     tree_pool_size = classifier.get_tree_pool_size()
-                    elapsed_time = time.process_time() - start_time
+                    elapsed_time = time.process_time() - start_time + cpt_runtime
 
                     print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size},{str(elapsed_time)}")
                     metrics_logger.info(f"{count},{accuracy}," \

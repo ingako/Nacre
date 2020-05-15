@@ -132,7 +132,10 @@ public class SeqPredictionServer {
             CPTPredictor cpt = cptList.get(treeId);
 
             // predicting a sequence
+            long startTime = System.currentTimeMillis();
             Sequence predicted = cpt.Predict(seq);
+            double runtime = (System.currentTimeMillis() - startTime) / 1000;
+
             System.out.println("Predicted symbol: " + predicted);
 
             SequenceMessage.Builder builder = SequenceMessage.newBuilder();
@@ -140,6 +143,7 @@ public class SeqPredictionServer {
                 builder.addSeq(item.val);
             }
 
+            builder.setRuntimeInSeconds(runtime);
             SequenceMessage reply = builder.build();
 
             responseObserver.onNext(reply);
@@ -160,9 +164,13 @@ public class SeqPredictionServer {
 
             List<Sequence> trainingSet = new ArrayList<Sequence>();
             trainingSet.add(seq);
-            cpt.Train(trainingSet);
 
-            TrainResponse reply = TrainResponse.newBuilder().setResult(true).build();
+            long startTime = System.currentTimeMillis();
+            cpt.Train(trainingSet);
+            double runtime = (System.currentTimeMillis() - startTime) / 1000;
+
+            TrainResponse reply = TrainResponse.newBuilder()
+                .setResult(true).setRuntimeInSeconds(runtime).build();
 
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
