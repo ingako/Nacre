@@ -76,7 +76,6 @@ void pro_pearl::train() {
     actual_labels.push_back(actual_label);
 
     vector<int> warning_tree_pos_list;
-    vector<int> drifted_tree_pos_list;
 
     shared_ptr<pearl_tree> cur_tree = nullptr;
 
@@ -96,6 +95,7 @@ void pro_pearl::train() {
         // detect warning
         if (detect_change(error_count, cur_tree->warning_detector)) {
             warning_detected_only = true;
+
             cur_tree->bg_pearl_tree = make_pearl_tree(-1);
             cur_tree->warning_detector->resetChange();
         }
@@ -103,9 +103,9 @@ void pro_pearl::train() {
         // detect drift
         if (detect_change(error_count, cur_tree->drift_detector)) {
             warning_detected_only = false;
-            drifted_tree_pos_list.push_back(i);
+            potential_drifted_tree_indices.insert(i);
 
-            cur_tree->warning_detector->resetChange();
+            // cur_tree->warning_detector->resetChange();
             cur_tree->drift_detector->resetChange();
         }
 
@@ -116,7 +116,7 @@ void pro_pearl::train() {
         // detect stability
         int correct_count = (int)(actual_label == predicted_label);
         if (cur_tree->replaced_tree
-                && detect_stability(correct_count, stability_detectors[i])) {
+                && detect_stability(correct_count * 5, stability_detectors[i])) {
             stability_detectors[i] = make_unique<HT::ADWIN>(warning_delta);
             stable_tree_indices.push_back(i);
         }
@@ -129,11 +129,6 @@ void pro_pearl::train() {
     // if warnings are detected, find closest state and update candidate_trees list
     if (warning_tree_pos_list.size() > 0) {
         select_candidate_trees(warning_tree_pos_list);
-    }
-
-    // if actual drifts are detected, swap trees and update cur_state
-    if (drifted_tree_pos_list.size() > 0) {
-        adapt_state(drifted_tree_pos_list);
     }
 }
 
@@ -166,7 +161,7 @@ void pro_pearl::predict_with_state_adaption(vector<int>& votes, int actual_label
 
         // detect warning
         if (detect_change(error_count, cur_tree->warning_detector)) {
-            warning_detected_only = false;
+            warning_detected_only = true;
 
             cur_tree->bg_pearl_tree = make_pearl_tree(-1);
             cur_tree->warning_detector->resetChange();
@@ -174,7 +169,7 @@ void pro_pearl::predict_with_state_adaption(vector<int>& votes, int actual_label
 
         // detect drift
         if (detect_change(error_count, cur_tree->drift_detector)) {
-            warning_detected_only = true;
+            warning_detected_only = false;
             potential_drifted_tree_indices.insert(i);
 
             cur_tree->drift_detector->resetChange();
