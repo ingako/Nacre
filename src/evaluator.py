@@ -121,7 +121,6 @@ class Evaluator:
         predicted_drift_locs = [-1 for v in range(num_trees)]
         drift_interval_sequences = [deque(maxlen=drift_interval_seq_len) for v in range(num_trees)]
         last_actual_drift_points = [0 for v in range(num_trees)]
-        backtrack_locs = [-1 for v in range(num_trees)]
 
         expected_drift_loc_indices = [0 for i in range(num_trees)]
 
@@ -160,15 +159,6 @@ class Evaluator:
 
                 # Generate new sequences for the actual drifted trees
                 for idx in classifier.get_stable_tree_indices():
-
-                    # if backtrack_locs[idx] == -1:
-                    #     continue
-
-                    # backtrack_locs[idx] -= 1
-                    # if backtrack_locs[idx] != 0:
-                    #     continue
-
-                    # backtrack_locs[idx] = -1
 
                     # find actual drift point at num_instances_before
                     num_instances_before = classifier.find_last_actual_drift_point(idx)
@@ -212,7 +202,8 @@ class Evaluator:
                             interval = fit_predict(clusterer, response.seq[0])
 
                             predicted_drift_locs[idx] = count + interval
-                            next_adapt_state_locs[idx] = count + interval + 50 # TODO currently set to the same as kappa window
+                            next_adapt_state_locs[idx] = count + interval + 300 # TODO currently set to the same as kappa window
+                            # next_adapt_state_locs[idx] = count + interval + 50 # TODO currently set to the same as kappa window
 
                             drift_interval_sequences[idx].append(interval)
                             last_actual_drift_points[idx] = count
@@ -246,8 +237,6 @@ class Evaluator:
                 # adapt state for both drifted tree and predicted drifted trees
                 actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()
                 # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
-                for idx in actual_drifted_tree_indices:
-                    backtrack_locs[idx] = 500
 
                 # train
                 classifier.train()
