@@ -17,7 +17,7 @@ max_samples = 1000001
 generator = 'agrawal'
 data_dir_prefix = '../data/'
 logger_dir_prefix = '../stable-period-logs/'
-dir_suffix = 'agrawal/abrupt/
+dir_suffix = 'agrawal/abrupt/'
 # dir_suffix = 'data/'
 
 data_dir = f'{data_dir_prefix}/{dir_suffix}'
@@ -39,7 +39,7 @@ for seed in range(0, 10):
     logger.setLevel(logging.DEBUG)
 
     stream = RecurrentDriftStream(generator=generator,
-                                  # concepts=[4, 0, 8, 6, 2],
+                                  concepts=[4, 0, 8, 6, 2, 1, 3, 5, 7, 9],
                                   has_noise=False,
                                   stable_period_lam=10,
                                   stable_period_start=1000,

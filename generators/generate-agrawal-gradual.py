@@ -43,6 +43,7 @@ for seed in range(0, 10):
     stream = RecurrentDriftStream(generator=generator,
                                   width=1000,
                                   # concepts=[4, 0, 8, 6, 2],
+                                  concepts=[4, 0, 8, 6, 2, 1, 3, 5, 7, 9],
                                   has_noise=False,
                                   stable_period_lam=10,
                                   stable_period_start=1000,
