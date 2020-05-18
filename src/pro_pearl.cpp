@@ -84,6 +84,10 @@ void pro_pearl::train() {
         int weight = poisson_distr(mrand);
         instance->setWeight(weight);
 
+        if (weight == 0) {
+            continue;
+        }
+
         cur_tree = static_pointer_cast<pearl_tree>(foreground_trees[i]);
         cur_tree->train(*instance);
 
@@ -105,7 +109,6 @@ void pro_pearl::train() {
             warning_detected_only = false;
             potential_drifted_tree_indices.insert(i);
 
-            // cur_tree->warning_detector->resetChange();
             cur_tree->drift_detector->resetChange();
         }
 
@@ -116,7 +119,7 @@ void pro_pearl::train() {
         // detect stability
         int correct_count = (int)(actual_label == predicted_label);
         if (cur_tree->replaced_tree
-                && detect_stability(correct_count * 5, stability_detectors[i])) {
+                && detect_stability(correct_count, stability_detectors[i])) {
             stability_detectors[i] = make_unique<HT::ADWIN>(warning_delta);
             stable_tree_indices.push_back(i);
         }
