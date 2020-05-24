@@ -31,9 +31,15 @@ class pro_pearl : public pearl {
         int find_last_actual_drift_point(int tree_idx);
         void set_expected_drift_prob(int tree_idx, double p);
         bool has_actual_drift(int tree_idx);
-        vector<int> adapt_state_with_proactivity();
         void update_drifted_tree_indices(const vector<int>& tree_indices);
         vector<int> get_stable_tree_indices();
+
+        void select_predicted_trees(const vector<int>& warning_tree_pos_list);
+
+        vector<int> adapt_state(const vector<int>& drifted_tree_pos_list, bool is_proactive);
+        vector<int> adapt_state_with_proactivity(
+                const vector<int>& drifted_tree_pos_list,
+                deque<shared_ptr<pearl_tree>>& _candidate_trees);
 
     private:
 
@@ -44,10 +50,11 @@ class pro_pearl : public pearl {
         set<int> potential_drifted_tree_indices;
         vector<unique_ptr<HT::ADWIN>> stability_detectors;
         vector<int> stable_tree_indices;
+        deque<shared_ptr<pearl_tree>> predicted_trees;
 
         static bool compare_kappa_arf(shared_ptr<arf_tree>& tree1,
                                       shared_ptr<arf_tree>& tree2);
-        virtual void predict_with_state_adaption(vector<int>& votes, int actual_label);
+        // virtual void predict_with_state_adaption(vector<int>& votes, int actual_label);
         bool detect_stability(int error_count, unique_ptr<HT::ADWIN>& detector);
 };
 
