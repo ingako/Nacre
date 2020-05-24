@@ -140,12 +140,15 @@ class Evaluator:
                 if not classifier.get_next_instance():
                     break
 
-                # set expected drift probability
+                # # set expected drift probability
                 # for idx in range(num_trees):
                 #     if predicted_drift_locs[idx] > 0:
+                #         classifier.set_is_adaptive(idx, True)
                 #         t_r = (count - last_actual_drift_points[idx]) / (predicted_drift_locs[idx] - last_actual_drift_points[idx])
                 #         expected_drift_prob = 1 - math.sin(math.pi * t_r)
                 #         classifier.set_expected_drift_prob(idx, expected_drift_prob)
+                #     else:
+                #         classifier.set_is_adaptive(idx, False)
 
                 # test
                 prediction = classifier.predict()
@@ -156,6 +159,10 @@ class Evaluator:
 
                 window_actual_labels.append(actual_label)
                 window_predicted_labels.append(prediction)
+
+                # train
+                classifier.train()
+                # classifier.delete_cur_instance()
 
                 # Generate new sequences for the actual drifted trees
                 for idx in classifier.get_stable_tree_indices():
@@ -172,6 +179,8 @@ class Evaluator:
                             interval = fit_predict(clusterer, interval)
                             drift_interval_sequences[idx].append(interval)
                             last_actual_drift_points[idx] = count - num_instances_before
+                    else:
+                        continue
 
                     # train CPT with the new sequence
                     if len(drift_interval_sequences[idx]) >= drift_interval_seq_len:
@@ -224,24 +233,23 @@ class Evaluator:
                     next_adapt_state_loc = next_adapt_state_locs[idx]
                     if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
                         next_adapt_state_locs[idx] = -1
-                        if not classifier.has_actual_drift(idx):
+                        if classifier.has_actual_drift(idx):
                             adapt_state_tree_pos_list.append(idx)
 
                 if len(transition_tree_pos_list) > 0:
                     # select candidate_trees
+                    # classifier.select_predicted_trees(transition_tree_pos_list)
                     classifier.select_candidate_trees(transition_tree_pos_list)
                 if len(adapt_state_tree_pos_list) > 0:
                     # update actual drifted trees
-                    classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
+                    # classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
 
-                # adapt state for both drifted tree and predicted drifted trees
-                actual_drifted_tree_indices = classifier.adapt_state_with_proactivity()
-                # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
-
-                # train
-                classifier.train()
-
-                # classifier.delete_cur_instance()
+                    # adapt state for both drifted tree and predicted drifted trees
+                    # rand_num = randrange(100)
+                    # if rand_num < proactive_percentage:
+                    actual_drifted_tree_indices = \
+                        classifier.adapt_state(adapt_state_tree_pos_list, False)
+                    # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
 
                 # log performance
                 if count % sample_freq == 0 and count != 0:
