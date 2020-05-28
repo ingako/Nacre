@@ -155,7 +155,7 @@ if __name__ == '__main__':
         result_directory = f"{args.generator_name}/{args.generator_traits}/"
 
     else:
-        data_file_path = f"../third_party/PEARL/data/" \
+        data_file_path = f"../data/" \
                          f"{args.dataset_name}/{args.dataset_name}.{args.data_format}"
         result_directory = args.dataset_name
 
@@ -219,7 +219,7 @@ if __name__ == '__main__':
 
     metrics_logger = setup_logger('metrics', metric_output_file)
     process_logger = setup_logger('process', f'{result_directory}/processes-{args.generator_seed}.info')
-    seq_logger = setup_logger('seq', f'{result_directory}/seq-{args.generator_seed}.log')
+    seq_logger = setup_logger('seq', f'{result_directory}/seq-pro-{args.generator_seed}.log')
 
     if not args.enable_state_adaption and not args.enable_state_graph:
         print("init adaptive_random_forest")
@@ -230,6 +230,13 @@ if __name__ == '__main__':
                                        args.warning_delta,
                                        args.drift_delta)
         eval_func = Evaluator.prequential_evaluation
+
+        Evaluator.prequential_evaluation(
+                classifier=pearl,
+                stream=data_file_path,
+                max_samples=args.max_samples,
+                sample_freq=args.sample_freq,
+                metrics_logger=metrics_logger)
     else:
         if args.proactive:
             pearl = pro_pearl(args.num_trees,
@@ -248,7 +255,32 @@ if __name__ == '__main__':
                               args.warning_delta,
                               args.drift_delta,
                               args.drift_tension)
-            eval_func = Evaluator.prequential_evaluation_proactive
+
+            all_predicted_drift_locs, accepted_predicted_drift_locs = \
+                Evaluator.prequential_evaluation_proactive(
+                    classifier=pearl,
+                    stream=data_file_path,
+                    max_samples=args.max_samples,
+                    sample_freq=args.sample_freq,
+                    metrics_logger=metrics_logger,
+                    seq_logger=seq_logger,
+                    grpc_port=args.grpc_port)
+
+            accepted_predicted_drifts_log_file = \
+                f"{result_directory}/accepted-predicted-drifts-{args.generator_seed}.log"
+            all_predicted_drifts_log_file = \
+                f"{result_directory}/all-predicted-drifts-{args.generator_seed}.log"
+
+            with open(accepted_predicted_drifts_log_file, "w") as accepted_f, \
+                    open(accepted_predicted_drifts_log_file, "w") as all_f:
+                for i in range(args.num_trees):
+                    accepted_f.write(",".join([str(v) \
+                             for v in accepted_predicted_drift_locs[i]]))
+                    accepted_f.write("\n")
+
+                    all_f.write(",".join([str(v) \
+                             for v in all_predicted_drift_locs[i]]))
+                    all_f.write("\n")
 
         else:
             pearl = pearl(args.num_trees,
@@ -268,19 +300,15 @@ if __name__ == '__main__':
                           args.drift_delta,
                           args.enable_state_adaption,
                           args.enable_state_graph)
-            eval_func = Evaluator.prequential_evaluation
+            Evaluator.prequential_evaluation(
+                    classifier=pearl,
+                    stream=data_file_path,
+                    max_samples=args.max_samples,
+                    sample_freq=args.sample_freq,
+                    metrics_logger=metrics_logger)
 
-    expected_drift_locs = []
+    # expected_drift_locs = []
     # expected_drift_locs_log = "../data/agrawal/abrupt/5/drift-0.log"
     # with open(f"{expected_drift_locs_log}", 'r') as f:
     #     expected_drift_locs.append(int(f.readline()))
     # print(expected_drift_locs)
-
-    eval_func(classifier=pearl,
-              stream=data_file_path,
-              max_samples=args.max_samples,
-              sample_freq=args.sample_freq,
-              expected_drift_locs=expected_drift_locs,
-              metrics_logger=metrics_logger,
-              seq_logger=seq_logger,
-              grpc_port=args.grpc_port)

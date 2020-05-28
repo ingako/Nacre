@@ -23,10 +23,7 @@ class Evaluator:
                                stream,
                                max_samples,
                                sample_freq,
-                               expected_drift_locs,
-                               metrics_logger,
-                               seq_logger,
-                               grpc_port):
+                               metrics_logger):
         correct = 0
         window_actual_labels = []
         window_predicted_labels = []
@@ -84,7 +81,6 @@ class Evaluator:
                                          stream,
                                          max_samples,
                                          sample_freq,
-                                         expected_drift_locs,
                                          metrics_logger,
                                          seq_logger,
                                          grpc_port):
@@ -122,7 +118,8 @@ class Evaluator:
         drift_interval_sequences = [deque(maxlen=drift_interval_seq_len) for v in range(num_trees)]
         last_actual_drift_points = [0 for v in range(num_trees)]
 
-        expected_drift_loc_indices = [0 for i in range(num_trees)]
+        all_predicted_drift_locs = [[] for i in range(num_trees)]
+        accepted_predicted_drift_locs = [[] for i in range(num_trees)]
 
         metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size,time")
         start_time = time.process_time()
@@ -211,8 +208,9 @@ class Evaluator:
                             interval = fit_predict(clusterer, response.seq[0])
 
                             predicted_drift_locs[idx] = count + interval
-                            next_adapt_state_locs[idx] = count + interval + 300 # TODO currently set to the same as kappa window
+                            next_adapt_state_locs[idx] = count + interval + 200 # TODO currently set to the same as kappa window
                             # next_adapt_state_locs[idx] = count + interval + 50 # TODO currently set to the same as kappa window
+                            all_predicted_drift_locs[idx].append(predicted_drift_locs[idx])
 
                             drift_interval_sequences[idx].append(interval)
                             last_actual_drift_points[idx] = count
@@ -235,6 +233,7 @@ class Evaluator:
                         next_adapt_state_locs[idx] = -1
                         if classifier.has_actual_drift(idx):
                             adapt_state_tree_pos_list.append(idx)
+                            accepted_predicted_drift_locs[idx].append(count)
 
                 if len(transition_tree_pos_list) > 0:
                     # select candidate_trees
@@ -265,3 +264,4 @@ class Evaluator:
                     correct = 0
                     window_actual_labels = []
                     window_predicted_labels = []
+        return all_predicted_drift_locs, accepted_predicted_drift_locs
