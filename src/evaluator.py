@@ -83,7 +83,8 @@ class Evaluator:
                                          sample_freq,
                                          metrics_logger,
                                          seq_logger,
-                                         grpc_port):
+                                         grpc_port,
+                                         pro_drift_window):
         num_trees = 60
         np.random.seed(0)
 
@@ -205,11 +206,12 @@ class Evaluator:
 
                         # print(f"Predicted next drift point: {response.seq[0]}")
                         if len(response.seq) > 0:
-                            interval = fit_predict(clusterer, response.seq[0])
+                            # interval = fit_predict(clusterer, response.seq[0])
+                            interval = response.seq[0]
 
                             predicted_drift_locs[idx] = count + interval
-                            next_adapt_state_locs[idx] = count + interval + 200 # TODO currently set to the same as kappa window
-                            # next_adapt_state_locs[idx] = count + interval + 50 # TODO currently set to the same as kappa window
+                            next_adapt_state_locs[idx] = count + interval \
+                                                         + pro_drift_window + 1
                             all_predicted_drift_locs[idx].append(predicted_drift_locs[idx])
 
                             drift_interval_sequences[idx].append(interval)
@@ -220,16 +222,14 @@ class Evaluator:
                 adapt_state_tree_pos_list = []
 
                 for idx in range(num_trees):
-                    predicted_drift_loc = predicted_drift_locs[idx]
                     # find potential drift trees for candidate selection
-                    if count >= predicted_drift_loc and predicted_drift_loc != -1:
+                    if count >= predicted_drift_locs[idx] and predicted_drift_locs[idx] != -1:
                         predicted_drift_locs[idx] = -1
                         # TODO if not classifier.actual_drifted_trees[idx]:
                         transition_tree_pos_list.append(idx)
 
                     # find trees with actual drifts
-                    next_adapt_state_loc = next_adapt_state_locs[idx]
-                    if count >= next_adapt_state_loc and next_adapt_state_loc != -1:
+                    if count >= next_adapt_state_locs[idx] and next_adapt_state_locs[idx] != -1:
                         next_adapt_state_locs[idx] = -1
                         if classifier.has_actual_drift(idx):
                             adapt_state_tree_pos_list.append(idx)
@@ -249,6 +249,7 @@ class Evaluator:
                     actual_drifted_tree_indices = \
                         classifier.adapt_state(adapt_state_tree_pos_list, False)
                     # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
+                    print(f"============================actual_drifted_tree_indices: {actual_drifted_tree_indices}")
 
                 # log performance
                 if count % sample_freq == 0 and count != 0:
@@ -264,4 +265,6 @@ class Evaluator:
                     correct = 0
                     window_actual_labels = []
                     window_predicted_labels = []
+        print(all_predicted_drift_locs)
+        print(accepted_predicted_drift_locs)
         return all_predicted_drift_locs, accepted_predicted_drift_locs

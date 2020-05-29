@@ -45,6 +45,10 @@ if __name__ == '__main__':
     parser.add_argument("--grpc_port",
                         dest="grpc_port", default=50051, type=int,
                         help="Port number for the sequence prediction grpc service")
+    parser.add_argument("--pro_drift_window",
+                        dest="pro_drift_window", default=100, type=int,
+                        help="number of instances must be seen for proactive drift \
+                        adaption")
 
     # real world datasets
     parser.add_argument("--dataset_name",
@@ -254,7 +258,7 @@ if __name__ == '__main__':
                               args.reuse_rate_upper_bound,
                               args.warning_delta,
                               args.drift_delta,
-                              args.drift_tension)
+                              args.pro_drift_window)
 
             all_predicted_drift_locs, accepted_predicted_drift_locs = \
                 Evaluator.prequential_evaluation_proactive(
@@ -264,7 +268,8 @@ if __name__ == '__main__':
                     sample_freq=args.sample_freq,
                     metrics_logger=metrics_logger,
                     seq_logger=seq_logger,
-                    grpc_port=args.grpc_port)
+                    grpc_port=args.grpc_port,
+                    pro_drift_window=args.pro_drift_window)
 
             accepted_predicted_drifts_log_file = \
                 f"{result_directory}/accepted-predicted-drifts-{args.generator_seed}.log"
@@ -274,12 +279,10 @@ if __name__ == '__main__':
             with open(accepted_predicted_drifts_log_file, "w") as accepted_f, \
                     open(accepted_predicted_drifts_log_file, "w") as all_f:
                 for i in range(args.num_trees):
-                    accepted_f.write(",".join([str(v) \
-                             for v in accepted_predicted_drift_locs[i]]))
+                    accepted_f.write(",".join([str(v) for v in accepted_predicted_drift_locs[i]]))
                     accepted_f.write("\n")
 
-                    all_f.write(",".join([str(v) \
-                             for v in all_predicted_drift_locs[i]]))
+                    all_f.write(",".join([str(v) for v in all_predicted_drift_locs[i]]))
                     all_f.write("\n")
 
         else:
