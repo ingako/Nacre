@@ -15,7 +15,7 @@ pro_pearl::pro_pearl(int num_trees,
                      double reuse_rate_upper_bound,
                      double warning_delta,
                      double drift_delta,
-                     double drift_tension) :
+                     int pro_drift_window_size):
         pearl(num_trees,
               max_num_candidate_trees,
               repo_size,
@@ -32,7 +32,8 @@ pro_pearl::pro_pearl(int num_trees,
               warning_delta,
               drift_delta,
               true,
-              true) {
+              true),
+        pro_drift_window_size(pro_drift_window_size) {
 
 }
 
@@ -50,9 +51,9 @@ void pro_pearl::init() {
 shared_ptr<pearl_tree> pro_pearl::make_pearl_tree(int tree_pool_id) {
     return make_shared<pearl_tree>(tree_pool_id,
                                    kappa_window_size,
+                                   pro_drift_window_size,
                                    warning_delta,
                                    drift_delta,
-                                   // drift_tension,
                                    mrand);
 }
 
@@ -176,13 +177,15 @@ void pro_pearl::select_predicted_trees(const vector<int>& warning_tree_pos_list)
 }
 
 bool pro_pearl::has_actual_drift(int tree_idx) {
-    if(potential_drifted_tree_indices.find(tree_idx) != potential_drifted_tree_indices.end()) {
+    if (potential_drifted_tree_indices.find(tree_idx) != potential_drifted_tree_indices.end()) {
         return false;
 
     }
 
     shared_ptr<pearl_tree> cur_tree
         = static_pointer_cast<pearl_tree>(foreground_trees[tree_idx]);
+
+    cout << "I'm in pro_pearl::has_actual_drift" << endl;
 
     return cur_tree->has_actual_drift();
 }
