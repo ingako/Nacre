@@ -55,6 +55,9 @@ if __name__ == '__main__':
     parser.add_argument("--stability",
                         dest="stability_delta", default=0.001, type=float,
                         help="delta value for detecting stability")
+    parser.add_argument("--sequence_len",
+                        dest="sequence_len", default=8, type=int,
+                        help="sequence length for sequence predictor")
 
     # real world datasets
     parser.add_argument("--dataset_name",
@@ -278,7 +281,8 @@ if __name__ == '__main__':
                     metrics_logger=metrics_logger,
                     seq_logger=seq_logger,
                     grpc_port=args.grpc_port,
-                    pro_drift_window=args.pro_drift_window)
+                    pro_drift_window=args.pro_drift_window,
+                    drift_interval_seq_len=args.sequence_len)
 
             accepted_predicted_drifts_log_file = \
                 f"{result_directory}/accepted-predicted-drifts-{args.generator_seed}.log"

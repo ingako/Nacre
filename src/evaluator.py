@@ -84,7 +84,8 @@ class Evaluator:
                                          metrics_logger,
                                          seq_logger,
                                          grpc_port,
-                                         pro_drift_window):
+                                         pro_drift_window,
+                                         drift_interval_seq_len):
         num_trees = 60
         np.random.seed(0)
 
@@ -109,8 +110,6 @@ class Evaluator:
         window_actual_labels = []
         window_predicted_labels = []
 
-        # proactive drift point prediction
-        drift_interval_seq_len = 8
         num_request = 0
         cpt_runtime = 0
 
