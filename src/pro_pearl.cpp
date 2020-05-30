@@ -17,7 +17,8 @@ pro_pearl::pro_pearl(int num_trees,
                      double drift_delta,
                      int pro_drift_window_size,
                      double hybrid_delta,
-                     int backtrack_window):
+                     int backtrack_window,
+                     double stability_delta):
         pearl(num_trees,
               max_num_candidate_trees,
               repo_size,
@@ -36,7 +37,9 @@ pro_pearl::pro_pearl(int num_trees,
               true,
               true),
         pro_drift_window_size(pro_drift_window_size),
-        hybrid_delta(hybrid_delta) {
+        hybrid_delta(hybrid_delta),
+        backtrack_window(backtrack_window),
+        stability_delta(stability_delta) {
 
 }
 
@@ -132,7 +135,7 @@ void pro_pearl::train() {
         int correct_count = (int)(actual_label == predicted_label);
         if (cur_tree->replaced_tree
                 && detect_stability(correct_count, stability_detectors[i])) {
-            stability_detectors[i] = make_unique<HT::ADWIN>(warning_delta);
+            stability_detectors[i] = make_unique<HT::ADWIN>(stability_delta);
             stable_tree_indices.push_back(i);
         }
     }

@@ -24,7 +24,8 @@ class pro_pearl : public pearl {
                   double drift_delta,
                   int pro_drift_window_size,
                   double hybrid_delta,
-                  int backtrack_window);
+                  int backtrack_window,
+                  double stability_delta);
 
         virtual void train();
         virtual shared_ptr<pearl_tree> make_pearl_tree(int tree_pool_id);
@@ -48,6 +49,7 @@ class pro_pearl : public pearl {
         int pro_drift_window_size = 100;
         double hybrid_delta = 0.001;
         int backtrack_window = 25;
+        double stability_delta = 0.001;
 
         int num_max_backtrack_instances = 100000000; // TODO
         int num_instances_seen = 0;
