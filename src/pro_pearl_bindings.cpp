@@ -68,7 +68,8 @@ PYBIND11_MODULE(pro_pearl, m) {
                       double,
                       double,
                       int,
-                      double>())
+                      double,
+                      int>())
         .def("select_candidate_trees", &pearl::select_candidate_trees)
         .def("select_predicted_trees", &pro_pearl::select_predicted_trees)
         .def("has_actual_drift", &pro_pearl::has_actual_drift)

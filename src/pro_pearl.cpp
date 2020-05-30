@@ -16,7 +16,8 @@ pro_pearl::pro_pearl(int num_trees,
                      double warning_delta,
                      double drift_delta,
                      int pro_drift_window_size,
-                     double hybrid_delta):
+                     double hybrid_delta,
+                     int backtrack_window):
         pearl(num_trees,
               max_num_candidate_trees,
               repo_size,
@@ -410,7 +411,6 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
         return -1;
     }
 
-    int window = 25; // TODO
     int drift_correct = 0;
     int swap_correct = 0;
     double drifted_tree_accuracy = 0.0;
@@ -435,7 +435,7 @@ int pro_pearl::find_last_actual_drift_point(int tree_idx) {
         drift_correct += drifted_tree_predictions.back();
         swap_correct += swapped_tree_predictions.back();
 
-        if (drifted_tree_predictions.size() >= window) {
+        if (drifted_tree_predictions.size() >= backtrack_window) {
             drift_correct -= drifted_tree_predictions.front();
             swap_correct -= swapped_tree_predictions.front();
             drifted_tree_predictions.pop_front();

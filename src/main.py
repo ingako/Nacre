@@ -49,6 +49,9 @@ if __name__ == '__main__':
     parser.add_argument("--hybrid",
                         dest="hybrid_delta", default=0.001, type=float,
                         help="delta value for proactive hybrid hoeffding bound")
+    parser.add_argument("--backtrack_window",
+                        dest="backtrack_window", default=25, type=int,
+                        help="number of instances per eval when backtracking")
 
     # real world datasets
     parser.add_argument("--dataset_name",
@@ -259,7 +262,8 @@ if __name__ == '__main__':
                               args.warning_delta,
                               args.drift_delta,
                               args.pro_drift_window,
-                              args.hybrid_delta)
+                              args.hybrid_delta,
+                              args.backtrack_window)
 
             all_predicted_drift_locs, accepted_predicted_drift_locs = \
                 Evaluator.prequential_evaluation_proactive(
