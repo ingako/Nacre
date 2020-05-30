@@ -39,9 +39,6 @@ if __name__ == '__main__':
                         dest="proactive", action="store_true",
                         help="Enable ProPearl")
     parser.set_defaults(proactive=False)
-    # parser.add_argument("--proactive_percentage",
-    #                     dest="proactive_percentage", default=100, type=int,
-    #                     help="The percentage of triggering proactive drift detection")
     parser.add_argument("--grpc_port",
                         dest="grpc_port", default=50051, type=int,
                         help="Port number for the sequence prediction grpc service")
@@ -49,6 +46,9 @@ if __name__ == '__main__':
                         dest="pro_drift_window", default=100, type=int,
                         help="number of instances must be seen for proactive drift \
                         adaption")
+    parser.add_argument("--hybrid",
+                        dest="hybrid_delta", default=0.001, type=float,
+                        help="delta value for proactive hybrid hoeffding bound")
 
     # real world datasets
     parser.add_argument("--dataset_name",
@@ -258,7 +258,8 @@ if __name__ == '__main__':
                               args.reuse_rate_upper_bound,
                               args.warning_delta,
                               args.drift_delta,
-                              args.pro_drift_window)
+                              args.pro_drift_window,
+                              args.hybrid_delta)
 
             all_predicted_drift_locs, accepted_predicted_drift_locs = \
                 Evaluator.prequential_evaluation_proactive(
