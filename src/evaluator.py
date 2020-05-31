@@ -208,13 +208,12 @@ class Evaluator:
                             # interval = fit_predict(clusterer, response.seq[0])
                             interval = response.seq[0]
 
-                            predicted_drift_locs[idx] = count + interval
-                            next_adapt_state_locs[idx] = count + interval \
+                            predicted_drift_locs[idx] = last_actual_drift_points[idx] + interval
+                            next_adapt_state_locs[idx] = last_actual_drift_points[idx] + interval \
                                                          + pro_drift_window + 1
                             all_predicted_drift_locs[idx].append(predicted_drift_locs[idx])
 
                             drift_interval_sequences[idx].append(interval)
-                            last_actual_drift_points[idx] = count
 
                 # check if hit predicted drift locations
                 transition_tree_pos_list = []
