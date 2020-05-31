@@ -23,8 +23,11 @@ class Evaluator:
                                stream,
                                max_samples,
                                sample_freq,
-                               metrics_logger):
+                               metrics_logger,
+                               expected_drift_locs,
+                               gain_per_drift_logger):
         correct = 0
+        gain_per_drift_correct = 0
         window_actual_labels = []
         window_predicted_labels = []
         if isinstance(classifier, pearl):
@@ -47,6 +50,15 @@ class Evaluator:
             actual_label = classifier.get_cur_instance_label()
             if prediction == actual_label:
                 correct += 1
+
+                if count > expected_drift_locs[0] + 1000:
+                    expected_drift_locs.popleft()
+                    gain_per_drift_logger.info(gain_per_drift_correct/1000)
+                    gain_per_drift_correct = 0
+                if len(expected_drift_locs) > 0 \
+                        and count > expected_drift_locs[0] \
+                        and count < expected_drift_locs[0] + 1000:
+                    gain_per_drift_correct += 1
 
             window_actual_labels.append(actual_label)
             window_predicted_labels.append(prediction)
@@ -85,7 +97,9 @@ class Evaluator:
                                          seq_logger,
                                          grpc_port,
                                          pro_drift_window,
-                                         drift_interval_seq_len):
+                                         drift_interval_seq_len,
+                                         expected_drift_locs,
+                                         gain_per_drift_logger):
         num_trees = 60
         np.random.seed(0)
 
@@ -107,6 +121,7 @@ class Evaluator:
             return int(round(clusterer.p_micro_clusters[label].center()[0]))
 
         correct = 0
+        gain_per_drift_correct = 0
         window_actual_labels = []
         window_predicted_labels = []
 
@@ -153,6 +168,15 @@ class Evaluator:
                 actual_label = classifier.get_cur_instance_label()
                 if prediction == actual_label:
                     correct += 1
+
+                    if count > expected_drift_locs[0] + 1000:
+                        expected_drift_locs.popleft()
+                        gain_per_drift_logger.info(gain_per_drift_correct/1000)
+                        gain_per_drift_correct = 0
+                    if  len(expected_drift_locs) > 0 \
+                            and count > expected_drift_locs[0] \
+                            and count < expected_drift_locs[0] + 1000:
+                        gain_per_drift_correct += 1
 
                 window_actual_labels.append(actual_label)
                 window_predicted_labels.append(prediction)

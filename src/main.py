@@ -6,6 +6,7 @@ import random
 import pathlib
 import logging
 import os.path
+from collections import deque
 
 import numpy as np
 
@@ -162,14 +163,15 @@ if __name__ == '__main__':
 
     # prepare data
     if args.is_generated_data:
-        data_file_path = f"../data/{args.generator_name}/" \
-                         f"{args.generator_traits}/" \
-                         f"{args.generator_seed}.{args.data_format}"
+        data_file_dir = f"../data/{args.generator_name}/" \
+                        f"{args.generator_traits}/"
+        data_file_path = f"{data_file_dir}/{args.generator_seed}.{args.data_format}"
         result_directory = f"{args.generator_name}/{args.generator_traits}/"
 
     else:
-        data_file_path = f"../data/" \
-                         f"{args.dataset_name}/{args.dataset_name}.{args.data_format}"
+        data_file_dir = f"../data/" \
+                         f"{args.dataset_name}/"
+        data_file_path = f"{data_file_dir}/{args.dataset_name}.{args.data_format}"
         result_directory = args.dataset_name
 
     if not os.path.isfile(data_file_path):
@@ -239,6 +241,16 @@ if __name__ == '__main__':
     process_logger = setup_logger('process', f'{result_directory}/processes-{args.generator_seed}.info')
     seq_logger = setup_logger('seq', f'{result_directory}/seq-pro-{args.generator_seed}.log')
 
+    gain_per_drift_logger = setup_logger('gain_per_drift', f'{result_directory}/gain-per-drift-{args.generator_seed}.log')
+
+    # for calculating gain per drift
+    expected_drift_locs = deque()
+    expected_drift_locs_log = f"{data_file_dir}/drift-{args.generator_seed}.log"
+    with open(f"{expected_drift_locs_log}", 'r') as f:
+        for line in f:
+            expected_drift_locs.append(int(line))
+    print(expected_drift_locs)
+
     if not args.enable_state_adaption and not args.enable_state_graph:
         print("init adaptive_random_forest")
         pearl = adaptive_random_forest(args.num_trees,
@@ -254,7 +266,9 @@ if __name__ == '__main__':
                 stream=data_file_path,
                 max_samples=args.max_samples,
                 sample_freq=args.sample_freq,
-                metrics_logger=metrics_logger)
+                metrics_logger=metrics_logger,
+                expected_drift_locs=expected_drift_locs,
+                gain_per_drift_logger=gain_per_drift_logger)
     else:
         if args.proactive:
             pearl = pro_pearl(args.num_trees,
@@ -287,7 +301,9 @@ if __name__ == '__main__':
                     seq_logger=seq_logger,
                     grpc_port=args.grpc_port,
                     pro_drift_window=args.pro_drift_window,
-                    drift_interval_seq_len=args.sequence_len)
+                    drift_interval_seq_len=args.sequence_len,
+                    expected_drift_locs=expected_drift_locs,
+                    gain_per_drift_logger=gain_per_drift_logger)
 
             accepted_predicted_drifts_log_file = \
                 f"{result_directory}/accepted-predicted-drifts-{args.generator_seed}.log"
@@ -326,10 +342,6 @@ if __name__ == '__main__':
                     stream=data_file_path,
                     max_samples=args.max_samples,
                     sample_freq=args.sample_freq,
-                    metrics_logger=metrics_logger)
-
-    # expected_drift_locs = []
-    # expected_drift_locs_log = "../data/agrawal/abrupt/5/drift-0.log"
-    # with open(f"{expected_drift_locs_log}", 'r') as f:
-    #     expected_drift_locs.append(int(f.readline()))
-    # print(expected_drift_locs)
+                    metrics_logger=metrics_logger,
+                    expected_drift_locs=expected_drift_locs,
+                    gain_per_drift_logger=gain_per_drift_logger)
