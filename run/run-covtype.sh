@@ -16,7 +16,7 @@ lambda=1
 
 kappa_window=50
 
-ports=($(seq 50010 10 50200))
+ports=($(seq 50051 1 50070))
 for port in $ports ; do
     port_info=$(lsof -i:$port)
     if [ -z "$port_info" ] ; then 
@@ -52,6 +52,9 @@ pro_drift_window=300
 stability=0.001
 hybrid=0.001
 
+grpc_pids=""
+propearl_pids=""
+
 # valgrind --tool=memcheck --suppressions=python.supp \
 #                                           python -E -tt \
 for seq_len in 8 12 16 20 ; do
@@ -60,11 +63,12 @@ for seq_len in 8 12 16 20 ; do
             for stability in 0.1 0.01 0.001 ; do
                 for hybrid in 0.1 0.01 0.001 ; do
 
-
     port=${ports[$port_idx]}
     echo "starting grpc server at port $port"
     nohup ../grpc/build/install/seqprediction/bin/seq-prediction-server $port &
     grpc_pids+=" $!"
+
+    sleep 1
 
     port_idx=$((port_idx+1))
 
@@ -89,6 +93,8 @@ for seq_len in 8 12 16 20 ; do
     done
 done
 
+echo "wait $propearl_pids"
 wait $propearl_pids
 
+echo "kill grpc servers listening at $grpc_pids"
 kill $grpc_pids
