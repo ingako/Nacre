@@ -190,6 +190,11 @@ if __name__ == '__main__':
         result_directory = f"{result_directory}/" \
                            f"k{args.cd_kappa_threshold}-e{args.edit_distance_threshold}/"
 
+    if args.proactive:
+        result_directory = f"{result_directory}/nacre/" \
+                           f"{args.sequence_len}/{args.backtrack_window}/" \
+                           f"{args.pro_drift_window}/{args.stability_delta}/{args.hybrid_delta}"
+
     pathlib.Path(result_directory).mkdir(parents=True, exist_ok=True)
 
     metric_output_file = "result"
