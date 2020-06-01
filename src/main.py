@@ -238,6 +238,8 @@ if __name__ == '__main__':
             out.write("background_window_count,candidate_window_count,reuse_rate\n")
 
     metrics_logger = setup_logger('metrics', metric_output_file)
+    metrics_logger.info("count,accuracy,kappa,candidate_tree_size,tree_pool_size,time")
+
     process_logger = setup_logger('process', f'{result_directory}/processes-{args.generator_seed}.info')
     seq_logger = setup_logger('seq', f'{result_directory}/seq-pro-{args.generator_seed}.log')
 

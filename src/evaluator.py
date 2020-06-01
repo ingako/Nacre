@@ -35,7 +35,6 @@ class Evaluator:
 
         log_size = isinstance(classifier, pearl)
 
-        metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size,time")
         start_time = time.process_time()
 
         classifier.init_data_source(stream);
@@ -71,8 +70,9 @@ class Evaluator:
             classifier.delete_cur_instance()
 
             if count % sample_freq == 0 and count != 0:
-                accuracy = correct / sample_freq
                 elapsed_time = time.process_time() - start_time
+                accuracy = correct / sample_freq
+                kappa = cohen_kappa_score(window_actual_labels, window_predicted_labels)
 
                 candidate_tree_size = 0
                 tree_pool_size = 60
@@ -80,8 +80,8 @@ class Evaluator:
                     candidate_tree_size = classifier.get_candidate_tree_group_size()
                     tree_pool_size = classifier.get_tree_pool_size()
 
-                print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size},{elapsed_time}")
-                metrics_logger.info(f"{count},{accuracy}," \
+                print(f"{count},{accuracy},{kappa},{candidate_tree_size},{tree_pool_size},{elapsed_time}")
+                metrics_logger.info(f"{count},{accuracy},{kappa}," \
                                     f"{candidate_tree_size},{tree_pool_size},{elapsed_time}")
 
                 correct = 0
@@ -136,7 +136,6 @@ class Evaluator:
         all_predicted_drift_locs = [[] for i in range(num_trees)]
         accepted_predicted_drift_locs = [[] for i in range(num_trees)]
 
-        metrics_logger.info("count,accuracy,candidate_tree_size,tree_pool_size,time")
         start_time = time.process_time()
 
         classifier.init_data_source(stream)
@@ -275,13 +274,14 @@ class Evaluator:
 
                 # log performance
                 if count % sample_freq == 0 and count != 0:
+                    elapsed_time = time.process_time() - start_time + cpt_runtime
                     accuracy = correct / sample_freq
+                    kappa = cohen_kappa_score(window_actual_labels, window_predicted_labels)
                     candidate_tree_size = classifier.get_candidate_tree_group_size()
                     tree_pool_size = classifier.get_tree_pool_size()
-                    elapsed_time = time.process_time() - start_time + cpt_runtime
 
-                    print(f"{count},{accuracy},{candidate_tree_size},{tree_pool_size},{str(elapsed_time)}")
-                    metrics_logger.info(f"{count},{accuracy}," \
+                    print(f"{count},{accuracy},{kappa},{candidate_tree_size},{tree_pool_size},{str(elapsed_time)}")
+                    metrics_logger.info(f"{count},{accuracy},{kappa}," \
                                         f"{candidate_tree_size},{tree_pool_size},{str(elapsed_time)}")
 
                     correct = 0
