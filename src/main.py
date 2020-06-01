@@ -316,7 +316,7 @@ if __name__ == '__main__':
                 f"{result_directory}/all-predicted-drifts-{args.generator_seed}.log"
 
             with open(accepted_predicted_drifts_log_file, "w") as accepted_f, \
-                    open(accepted_predicted_drifts_log_file, "w") as all_f:
+                    open(all_predicted_drifts_log_file, "w") as all_f:
                 for i in range(args.num_trees):
                     accepted_f.write(",".join([str(v) for v in accepted_predicted_drift_locs[i]]))
                     accepted_f.write("\n")

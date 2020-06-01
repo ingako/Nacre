@@ -266,9 +266,6 @@ class Evaluator:
                     # update actual drifted trees
                     # classifier.update_drifted_tree_indices(adapt_state_tree_pos_list)
 
-                    # adapt state for both drifted tree and predicted drifted trees
-                    # rand_num = randrange(100)
-                    # if rand_num < proactive_percentage:
                     actual_drifted_tree_indices = \
                         classifier.adapt_state(adapt_state_tree_pos_list, False)
                     # print(f"actual_drifted_tree_indices: {actual_drifted_tree_indices}")
