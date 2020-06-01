@@ -29,6 +29,7 @@ class RecurrentDriftStream(ConceptDriftStream):
                  stable_period_start=1000,
                  stable_period_base=200,
                  stable_period_logger=None,
+                 drift_interval_distr="poisson",
                  random_state=0):
 
         super().__init__()
@@ -57,8 +58,14 @@ class RecurrentDriftStream(ConceptDriftStream):
         self.stable_period_lam = stable_period_lam
         self.stable_period_start = stable_period_start
         self.stable_period_base = stable_period_base
-        self.stable_period_probs = \
-                self.__get_poisson_probs(20, self.stable_period_lam)
+
+        if drift_interval_distr == "poisson":
+            self.stable_period_probs = \
+                    self.__get_poisson_probs(20, self.stable_period_lam)
+        elif drift_interval_distr == "uniform":
+            self.stable_period_probs = \
+                    self.__get_uniform_probs(20)
+
         self.stable_period_logger = stable_period_logger
         print(f"stable_period_probs: {self.stable_period_probs}")
 
@@ -234,13 +241,16 @@ class RecurrentDriftStream(ConceptDriftStream):
             if r < cur_sum:
                 return idx
 
+    def __get_uniform_probs(self, num_events):
+        return [100/num_events/100 for i in range(num_events)]
+
     def __get_poisson_probs(self, num_events, lam):
         probs = [0] * num_events
         for e in range(0, num_events):
             probs[e] = self.__calc_poisson_prob(e, lam)
 
         norm_probs = [float(i)/sum(probs) for i in probs]
-        print(f"norm_probs: {norm_probs}")
+        print(f"poisson_probs: {norm_probs}")
         return norm_probs
 
     def __calc_poisson_prob(self, k, lam):
