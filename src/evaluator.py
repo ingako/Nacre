@@ -50,14 +50,15 @@ class Evaluator:
             if prediction == actual_label:
                 correct += 1
 
-                if count > expected_drift_locs[0] + 1000:
-                    expected_drift_locs.popleft()
-                    acc_per_drift_logger.info(acc_per_drift_correct/1000)
-                    acc_per_drift_correct = 0
-                if len(expected_drift_locs) > 0 \
-                        and count > expected_drift_locs[0] \
-                        and count < expected_drift_locs[0] + 1000:
-                    acc_per_drift_correct += 1
+                if expected_drift_locs:
+                    if count > expected_drift_locs[0] + 1000:
+                        expected_drift_locs.popleft()
+                        acc_per_drift_logger.info(acc_per_drift_correct/1000)
+                        acc_per_drift_correct = 0
+                    if len(expected_drift_locs) > 0 \
+                            and count > expected_drift_locs[0] \
+                            and count < expected_drift_locs[0] + 1000:
+                        acc_per_drift_correct += 1
 
             window_actual_labels.append(actual_label)
             window_predicted_labels.append(prediction)
@@ -168,14 +169,15 @@ class Evaluator:
                 if prediction == actual_label:
                     correct += 1
 
-                    if count > expected_drift_locs[0] + 1000:
-                        expected_drift_locs.popleft()
-                        acc_per_drift_logger.info(acc_per_drift_correct/1000)
-                        acc_per_drift_correct = 0
-                    if  len(expected_drift_locs) > 0 \
-                            and count > expected_drift_locs[0] \
-                            and count < expected_drift_locs[0] + 1000:
-                        acc_per_drift_correct += 1
+                    if expected_drift_locs:
+                        if count > expected_drift_locs[0] + 1000:
+                            expected_drift_locs.popleft()
+                            acc_per_drift_logger.info(acc_per_drift_correct/1000)
+                            acc_per_drift_correct = 0
+                        if  len(expected_drift_locs) > 0 \
+                                and count > expected_drift_locs[0] \
+                                and count < expected_drift_locs[0] + 1000:
+                            acc_per_drift_correct += 1
 
                 window_actual_labels.append(actual_label)
                 window_predicted_labels.append(prediction)

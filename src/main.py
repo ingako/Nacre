@@ -245,13 +245,16 @@ if __name__ == '__main__':
 
     acc_per_drift_logger = setup_logger('acc_per_drift', f'{result_directory}/acc-per-drift-{args.generator_seed}.log')
 
-    # for calculating acc per drift
-    expected_drift_locs = deque()
-    expected_drift_locs_log = f"{data_file_dir}/drift-{args.generator_seed}.log"
-    with open(f"{expected_drift_locs_log}", 'r') as f:
-        for line in f:
-            expected_drift_locs.append(int(line))
-    print(expected_drift_locs)
+
+    expected_drift_locs = None
+    if args.is_generated_data:
+        # for calculating acc per drift
+        expected_drift_locs = deque()
+        expected_drift_locs_log = f"{data_file_dir}/drift-{args.generator_seed}.log"
+        with open(f"{expected_drift_locs_log}", 'r') as f:
+            for line in f:
+                expected_drift_locs.append(int(line))
+        print(expected_drift_locs)
 
     if not args.enable_state_adaption and not args.enable_state_graph:
         print("init adaptive_random_forest")
