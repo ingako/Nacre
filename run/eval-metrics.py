@@ -10,7 +10,8 @@ from pprint import PrettyPrinter
 
 
 param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
-metric_strs = ["Acc", "Kappa", "Gain per Drift", "Cum. Acc. Gain", "Runtime", "#Trees"]
+# metric_strs = ["Acc", "Kappa", "Gain per Drift", "Cum. Acc. Gain", "Runtime", "#Trees"]
+metric_strs = ["Acc", "Kappa", "Cum. Acc. Gain", "Runtime", "#Trees"]
 
 
 @dataclass
@@ -109,7 +110,7 @@ def get_metrics_for_seed(seed, metrics_dict):
 
             key = tuple(v for v in param_values)
             if key in metrics_dict:
-                for i in range(len(metric_strs)-1):
+                for i in range(len(metric_strs)):
                     metrics_dict[key][i].append(nacre_metrics[i])
             else:
                 metrics_dict[key] = [[v] for v in nacre_metrics]
@@ -121,11 +122,18 @@ metrics_dict = {}
 for seed in range(0, 10):
     cur_metric = get_metrics_for_seed(seed, metrics_dict)
 
+highest_gain = 0
+result = None
 for (key, vals) in metrics_dict.items():
-    for i in range(len(metric_strs)-1):
+    for i in range(len(metric_strs)):
         mean = round(np.mean(metrics_dict[key][i]), 2)
         std = round(np.std(metrics_dict[key][i]), 2)
-        metrics_dict[key][i] = f"{mean}+{std}"
+        metrics_dict[key][i] = f"${mean}\pm{std}$"
+        if metric_strs[i] == "Cum. Acc. Gain":
+            if highest_gain < mean:
+                highest_gain = mean
+                result = [key, vals]
 
 pp = PrettyPrinter()
 pp.pprint(metrics_dict)
+pp.pprint(result)
