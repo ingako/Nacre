@@ -6,6 +6,12 @@ import math
 import pandas as pd
 import numpy as np
 from dataclasses import dataclass
+from pprint import PrettyPrinter
+
+
+param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
+metric_strs = ["Acc", "Kappa", "Gain per Drift", "Cum. Acc. Gain", "Runtime", "#Trees"]
+
 
 @dataclass
 class Param:
@@ -24,11 +30,11 @@ def is_empty_file(fpath):
     return False if os.path.isfile(fpath) and os.path.getsize(fpath) > 0 else True
 
 def get_metrics(df, gain):
-    return [round(df["accuracy"].mean(), 2), round(df["kappa"].mean(), 2), \
-            round(gain, 2), round(df["time"].iloc[-1]/60, 2), df["tree_pool_size"].iloc[-1]]
+    return [df["accuracy"].mean()*100, df["kappa"].mean()*100, \
+            gain*100, df["time"].iloc[-1]/60, df["tree_pool_size"].iloc[-1]]
 
 
-for seed in range(0, 1):
+def get_metrics_for_seed(seed, metrics_dict):
     base_dir = os.getcwd()
     generator = sys.argv[1]
 
@@ -57,30 +63,19 @@ for seed in range(0, 1):
     print(f"evaluating {generator}...")
     print("evaluating params...")
 
-    param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
-    metric_strs = ["Acc", "Kappa", "Gain per Drift", "Cum. Acc. Gain", "Runtime", "#Trees"]
-
-    def eval_nacre_output(cur_data_dir, param_values):
+    def eval_nacre_output(cur_data_dir, param_values, metrics_dict):
 
         if len(param_values) != len(param_strs):
             # recurse
             params = [f for f in os.listdir(cur_data_dir) if os.path.isdir(os.path.join(cur_data_dir, f))]
             print(f"evaluating {params}...")
 
-            highest_gain = -1
-            arf_metrics,  pearl_metrics, nacre_metrics = [], [], []
             for cur_param in params:
                 param_values.append(cur_param)
-                metrics = eval_nacre_output(f"{cur_data_dir}/{cur_param}", param_values)
+                metrics = eval_nacre_output(f"{cur_data_dir}/{cur_param}",
+                                            param_values,
+                                            metrics_dict)
                 param_values.pop()
-                if highest_gain < metrics[0]:
-                   highest_gain = metrics[0]
-                   arf_metrics = metrics[1]
-                   pearl_metrics = metrics[2]
-                   nacre_metrics = metrics[3]
-
-            return [highest_gain, arf_metrics, pearl_metrics, nacre_metrics]
-
 
         else:
             nacre_output = f"{cur_data_dir}/result-pro-{seed}-{p.poisson_lambda}.csv"
@@ -108,13 +103,27 @@ for seed in range(0, 1):
                 nacre_arf_gain += nacre_acc[i] - arf_acc[i]
                 nacre_pearl_gain += nacre_acc[i] - pearl_acc[i]
 
-            # if  highest_gain < nacre_pearl_gain:
-            highest_gain = round(nacre_pearl_gain, 2)
             arf_metrics = get_metrics(arf_df, 0)
             pearl_metrics = get_metrics(pearl_df, pearl_arf_gain)
-            nacre_metrics = get_metrics(nacre_df, nacre_arf_gain)
+            nacre_metrics = get_metrics(nacre_df, nacre_pearl_gain)
 
-            return [highest_gain, arf_metrics, pearl_metrics, nacre_metrics]
+            key = tuple(v for v in param_values)
+            if key in metrics_dict:
+                for i in range(len(metric_strs)-1):
+                    metrics_dict[key][i] += nacre_metrics[i]
+            else:
+                metrics_dict[key] = nacre_metrics
 
-    metrics = eval_nacre_output(cur_data_dir, [])
-    print(metrics)
+    eval_nacre_output(cur_data_dir, [], metrics_dict)
+
+
+metrics_dict = {}
+for seed in range(0, 10):
+    cur_metric = get_metrics_for_seed(seed, metrics_dict)
+
+for (key, vals) in metrics_dict.items():
+    for i in range(len(metric_strs)-1):
+        metrics_dict[key][i] = round(metrics_dict[key][i]/10, 2)
+
+pp = PrettyPrinter()
+pp.pprint(metrics_dict)
