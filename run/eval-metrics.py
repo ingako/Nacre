@@ -110,9 +110,9 @@ def get_metrics_for_seed(seed, metrics_dict):
             key = tuple(v for v in param_values)
             if key in metrics_dict:
                 for i in range(len(metric_strs)-1):
-                    metrics_dict[key][i] += nacre_metrics[i]
+                    metrics_dict[key][i].append(nacre_metrics[i])
             else:
-                metrics_dict[key] = nacre_metrics
+                metrics_dict[key] = [[v] for v in nacre_metrics]
 
     eval_nacre_output(cur_data_dir, [], metrics_dict)
 
@@ -123,7 +123,9 @@ for seed in range(0, 10):
 
 for (key, vals) in metrics_dict.items():
     for i in range(len(metric_strs)-1):
-        metrics_dict[key][i] = round(metrics_dict[key][i]/10, 2)
+        mean = round(np.mean(metrics_dict[key][i]), 2)
+        std = round(np.std(metrics_dict[key][i]), 2)
+        metrics_dict[key][i] = f"{mean}+{std}"
 
 pp = PrettyPrinter()
 pp.pprint(metrics_dict)
