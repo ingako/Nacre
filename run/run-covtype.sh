@@ -14,7 +14,7 @@ reuse_rate=0.18
 lossy_window_size=100000000
 lambda=1
 
-kappa_window=50
+kappa_window=200
 
 ports=($(seq 50051 1 50070))
 for port in $ports ; do
@@ -57,11 +57,11 @@ propearl_pids=""
 
 # valgrind --tool=memcheck --suppressions=python.supp \
 #                                           python -E -tt \
-for seq_len in 8 12 16 20 ; do
-    for backtrack_window in 25 50 75 100 ; do
+# for seq_len in 8 12 16 20 ; do
+#    for backtrack_window in 25 50 75 100 ; do
         for pro_drift_window in 200 300 400 500 ; do
             for stability in 0.1 0.01 0.001 ; do
-                for hybrid in 0.1 0.01 0.001 ; do
+                for hybrid in 0.1 0.5 0.9 ; do
 
     port=${ports[$port_idx]}
     echo "starting grpc server at port $port"
@@ -89,7 +89,7 @@ for seq_len in 8 12 16 20 ; do
         -p --proactive --grpc_port $port &
 
     propearl_pids+=" $!"
-
+        done
     done
 done
 
