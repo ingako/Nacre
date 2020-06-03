@@ -142,9 +142,16 @@ highest_gain = 0
 result = None
 for (key, vals) in metrics_dict.items():
     for i in range(len(metric_strs)):
-        mean = round(np.mean(metrics_dict[key][i]), 2)
-        std = round(np.std(metrics_dict[key][i]), 2)
-        metrics_dict[key][i] = f"${mean}\pm{std}$"
+        mean = np.mean(metrics_dict[key][i])
+        std = np.std(metrics_dict[key][i])
+
+        if metric_strs[i] == "#Trees":
+            mean = int(round(mean)), int(round(std))
+            metrics_dict[key][i] = f"${mean}\pm{std}$"
+        else:
+            mean, std = round(mean, 2), round(std, 2)
+            metrics_dict[key][i] = f"${mean:.2f}\pm{std:.2f}$"
+
         if metric_strs[i] == "Cum. Acc. Gain":
             if highest_gain < mean:
                 highest_gain = mean
@@ -153,3 +160,4 @@ for (key, vals) in metrics_dict.items():
 pp = PrettyPrinter()
 pp.pprint(metrics_dict)
 pp.pprint(result)
+print(" & ".join(result[1]))
