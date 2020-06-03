@@ -10,8 +10,7 @@ from pprint import PrettyPrinter
 
 
 param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
-# metric_strs = ["Acc", "Kappa", "Gain per Drift", "Cum. Acc. Gain", "Runtime", "#Trees"]
-metric_strs = ["Acc", "Kappa", "Cum. Acc. Gain", "Runtime", "#Trees"]
+metric_strs = ["Acc", "Kappa", "Gain per Drift", "Cum. Acc. Gain", "Runtime", "#Trees"]
 
 
 @dataclass
@@ -19,7 +18,7 @@ class Param:
     generator: str = "covtype"
     seed: int = 0
     kappa: float = 0.0
-    ed: int =90
+    ed: int = 90
     reuse_window_size: int = 0
     reuse_rate: float = 0.18
     lossy_window_size: int = 100000000
@@ -30,9 +29,10 @@ class Param:
 def is_empty_file(fpath):
     return False if os.path.isfile(fpath) and os.path.getsize(fpath) > 0 else True
 
-def get_metrics(df, gain):
-    return [df["accuracy"].mean()*100, df["kappa"].mean()*100, \
-            gain*100, df["time"].iloc[-1]/60, df["tree_pool_size"].iloc[-1]]
+def get_metrics(df, gain_per_drift, gain):
+    return [df["accuracy"].mean()*100, df["kappa"].mean()*100,
+            gain_per_drift * 100, gain*100,
+            df["time"].iloc[-1]/60, df["tree_pool_size"].iloc[-1]]
 
 
 def get_metrics_for_seed(seed, metrics_dict):
@@ -57,8 +57,18 @@ def get_metrics_for_seed(seed, metrics_dict):
     arf_output  = f"{arf_data_dir}/result-{seed}-{p.poisson_lambda}.csv"
     pearl_output = f"{pearl_data_dir}/result-{seed}-{p.poisson_lambda}.csv"
 
+    arf_acc_per_drift  = f"{arf_data_dir}/acc-per-drift-{seed}.csv"
+    pearl_acc_per_drift = f"{pearl_data_dir}/acc-per-drift-{seed}.csv"
+
     arf_df = pd.read_csv(arf_output)
     pearl_df = pd.read_csv(pearl_output)
+
+    arf_acc_per_drift = pd.read_csv(
+            f"{arf_data_dir}/acc-per-drift-{seed}.log", header=None)
+    pearl_acc_per_drift = pd.read_csv(
+            f"{pearl_data_dir}/acc-per-drift-{seed}.log", header=None)
+    arf_acc_per_drift_mean = arf_acc_per_drift[0].mean()
+    pearl_acc_per_drift_mean = arf_acc_per_drift[0].mean()
 
     cur_data_dir = f"{pearl_data_dir}/nacre/"
     print(f"evaluating {generator}...")
@@ -79,12 +89,18 @@ def get_metrics_for_seed(seed, metrics_dict):
                 param_values.pop()
 
         else:
+
+            nacre_acc_per_drift = pd.read_csv(
+                    f"{cur_data_dir}/acc-per-drift-{seed}.log", header=None)
+            nacre_gain_per_drift= nacre_acc_per_drift.mean() - pearl_acc_per_drift_mean
+
             nacre_output = f"{cur_data_dir}/result-pro-{seed}-{p.poisson_lambda}.csv"
 
             arf_acc = arf_df["accuracy"]
             pearl_acc = pearl_df["accuracy"]
 
             if is_empty_file(nacre_output):
+                print(f"{nacre_output} is empty")
                 return
 
             nacre_df = pd.read_csv(nacre_output)
@@ -104,9 +120,9 @@ def get_metrics_for_seed(seed, metrics_dict):
                 nacre_arf_gain += nacre_acc[i] - arf_acc[i]
                 nacre_pearl_gain += nacre_acc[i] - pearl_acc[i]
 
-            arf_metrics = get_metrics(arf_df, 0)
-            pearl_metrics = get_metrics(pearl_df, pearl_arf_gain)
-            nacre_metrics = get_metrics(nacre_df, nacre_pearl_gain)
+            arf_metrics = get_metrics(arf_df, 0, 0)
+            pearl_metrics = get_metrics(pearl_df, 0, pearl_arf_gain)
+            nacre_metrics = get_metrics(nacre_df, nacre_gain_per_drift, nacre_pearl_gain)
 
             key = tuple(v for v in param_values)
             if key in metrics_dict:
