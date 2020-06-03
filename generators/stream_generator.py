@@ -226,7 +226,12 @@ class RecurrentDriftStream(ConceptDriftStream):
         for i in range(0, self.n_features):
             header.append(f"@attribute a{i} numeric")
 
-        header.append("@attribute class {0.0, 1.0}")
+        if self.generator == "agrawal":
+            header.append("@attribute class {0.0, 1.0}")
+        elif self.generator == "led":
+            header.append("@attribute class {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}")
+        else:
+            print("Unknown generator")
         header.append("@data")
         header.append("\n")
 
