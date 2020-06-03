@@ -35,7 +35,7 @@ def get_metrics(df, gain_per_drift, gain):
             df["time"].iloc[-1]/60, df["tree_pool_size"].iloc[-1]]
 
 def eval_nacre_output(cur_data_dir, param_values, nacre_metrics_dict,
-                      arf_acc, pearl_acc, pearl_acc_per_drift_mean, p):
+                      arf_acc, pearl_acc, arf_acc_per_drift_mean, p):
 
     if len(param_values) != len(param_strs):
         # recurse
@@ -49,7 +49,7 @@ def eval_nacre_output(cur_data_dir, param_values, nacre_metrics_dict,
                                         nacre_metrics_dict,
                                         arf_acc,
                                         pearl_acc,
-                                        pearl_acc_per_drift_mean,
+                                        arf_acc_per_drift_mean,
                                         p)
             param_values.pop()
 
@@ -57,7 +57,7 @@ def eval_nacre_output(cur_data_dir, param_values, nacre_metrics_dict,
 
         nacre_acc_per_drift = pd.read_csv(
                 f"{cur_data_dir}/acc-per-drift-{seed}.log", header=None)
-        nacre_gain_per_drift= nacre_acc_per_drift.mean() - pearl_acc_per_drift_mean
+        nacre_gain_per_drift= nacre_acc_per_drift.mean() - arf_acc_per_drift_mean
 
         nacre_output = f"{cur_data_dir}/result-pro-{seed}-{p.poisson_lambda}.csv"
 
@@ -77,7 +77,7 @@ def eval_nacre_output(cur_data_dir, param_values, nacre_metrics_dict,
             nacre_arf_gain += nacre_acc[i] - arf_acc[i]
             nacre_pearl_gain += nacre_acc[i] - pearl_acc[i]
 
-        nacre_metrics = get_metrics(nacre_df, nacre_gain_per_drift, nacre_pearl_gain)
+        nacre_metrics = get_metrics(nacre_df, nacre_gain_per_drift, nacre_arf_gain)
 
         key = tuple(v for v in param_values)
         if key in nacre_metrics_dict:
@@ -88,8 +88,8 @@ def eval_nacre_output(cur_data_dir, param_values, nacre_metrics_dict,
 
 
 def get_metrics_for_seed(seed,
-                         arf_metrics_dict,
-                         pearl_metrics_dict,
+                         arf_metrics_cum,
+                         pearl_metrics_cum,
                          nacre_metrics_dict):
 
     base_dir = os.getcwd()
@@ -126,34 +126,52 @@ def get_metrics_for_seed(seed,
     for i in range(0, int(sys.argv[2])):
         pearl_arf_gain += pearl_acc[i] - arf_acc[i]
 
-    arf_metrics = get_metrics(arf_df, 0, 0)
-    pearl_metrics = get_metrics(pearl_df, 0, pearl_arf_gain)
-
     # gain per drift for ARF and PEARL
     arf_acc_per_drift = pd.read_csv(
             f"{arf_data_dir}/acc-per-drift-{seed}.log", header=None)
     pearl_acc_per_drift = pd.read_csv(
             f"{pearl_data_dir}/acc-per-drift-{seed}.log", header=None)
     arf_acc_per_drift_mean = arf_acc_per_drift[0].mean()
-    pearl_acc_per_drift_mean = arf_acc_per_drift[0].mean()
+    pearl_acc_per_drift_mean = pearl_acc_per_drift[0].mean()
 
-    cur_data_dir = f"{pearl_data_dir}/nacre/"
+    arf_metrics = get_metrics(arf_df, 0, 0)
+    pearl_metrics = get_metrics(pearl_df,
+                                pearl_acc_per_drift_mean
+                                -arf_acc_per_drift_mean,
+                                pearl_arf_gain)
+
+    if arf_metrics_cum:
+        for i in range(len(metric_strs)):
+            arf_metrics_cum[i].append(arf_metrics[i])
+    else:
+        arf_metrics_cum = [[v] for v in arf_metrics]
+
+    if pearl_metrics_cum:
+        for i in range(len(metric_strs)):
+            pearl_metrics_cum[i].append(pearl_metrics[i])
+    else:
+        pearl_metrics_cum = [[v] for v in pearl_metrics]
+
     print(f"evaluating {generator}...")
     print("evaluating params...")
 
+    cur_data_dir = f"{pearl_data_dir}/nacre/"
     eval_nacre_output(cur_data_dir, [], nacre_metrics_dict,
-                      arf_acc, pearl_acc, pearl_acc_per_drift_mean, p)
+                      arf_acc, pearl_acc, arf_acc_per_drift_mean, p)
+
+    return arf_metrics_cum, pearl_metrics_cum
 
 
-arf_metrics_dict = {}
-pearl_metrics_dict = {}
+arf_metrics_cum = [[] for i in range(len(metric_strs))]
+pearl_metrics_cum = [[] for i in range(len(metric_strs))]
 nacre_metrics_dict = {}
 
 for seed in range(0, 10):
-    cur_metric = get_metrics_for_seed(seed,
-                                      arf_metrics_dict,
-                                      pearl_metrics_dict,
-                                      nacre_metrics_dict)
+    get_metrics_for_seed(
+            seed,
+            arf_metrics_cum,
+            pearl_metrics_cum,
+            nacre_metrics_dict)
 
 highest_gain = 0
 result = None
@@ -174,7 +192,25 @@ for (key, vals) in nacre_metrics_dict.items():
                 highest_gain = mean
                 result = [key, vals]
 
+
+def get_metric_in_latex(metrics):
+    for i in range(len(metric_strs)):
+        mean = np.mean(metrics[i])
+        std = np.std(metrics[i])
+
+        if metric_strs[i] == "#Trees":
+            mean, std = int(round(mean)), int(round(std))
+            metrics[i] = f"${mean}\pm{std}$"
+        else:
+            mean, std = round(mean, 2), round(std, 2)
+            metrics[i] = f"${mean:.2f}\pm{std:.2f}$"
+    return " & ".join(metrics)
+
+
 pp = PrettyPrinter()
 pp.pprint(nacre_metrics_dict)
 pp.pprint(result)
+
+print(get_metric_in_latex(arf_metrics_cum))
+print(get_metric_in_latex(pearl_metrics_cum))
 print(" & ".join(result[1]))
