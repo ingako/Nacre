@@ -10,6 +10,7 @@ from skmultiflow.data import STAGGERGenerator
 from skmultiflow.data import LEDGeneratorDrift
 from skmultiflow.data import MIXEDGenerator
 from skmultiflow.data import HyperplaneGenerator
+from skmultiflow.data.random_tree_generator import RandomTreeGenerator
 from skmultiflow.data import ConceptDriftStream
 
 class RecurrentDriftStream(ConceptDriftStream):
@@ -153,6 +154,8 @@ class RecurrentDriftStream(ConceptDriftStream):
             self.concepts = [v for v in range(0, 2)]
         elif self.generator in ['led']:
             self.concepts = [v for v in range(0, 7)]
+        elif self.generator in ['tree']:
+            self.concepts = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 
         if self.concept_shift_step > 0:
             for concept in self.all_concepts:
@@ -192,6 +195,12 @@ class RecurrentDriftStream(ConceptDriftStream):
                     stream = LEDGeneratorDrift(random_state=self.random_state,
                                                has_noise=True,
                                                n_drift_features=concept)
+                elif self.generator == 'tree':
+                    stream = RandomTreeGenerator(tree_random_state=concept,
+                                                 sample_random_state=concept,
+                                                 max_tree_depth=concept+2,
+                                                 min_leaf_depth=concept,
+                                                 n_classes=2)
                 else:
                     print(f"unknown stream generator {self.generator}")
                     exit()
@@ -223,15 +232,26 @@ class RecurrentDriftStream(ConceptDriftStream):
     def get_arff_header(self):
         header = []
 
-        for i in range(0, self.n_features):
-            header.append(f"@attribute a{i} numeric")
+        for i in range(self.n_features):
+            if self.generator == "led":
+                header.append(f"@attribute a{i} {0.0, 1.0}")
+            elif self.generator == "stagger":
+                header.append(f"@attribute a{i} {0.0, 1.0, 2.0}")
+            else:
+                header.append(f"@attribute a{i} numeric")
 
-        if self.generator == "agrawal":
-            header.append("@attribute class {0.0, 1.0}")
-        elif self.generator == "led":
-            header.append("@attribute class {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0}")
-        else:
-            print("Unknown generator")
+        print(f"num_features: {self.n_features}")
+
+        class_str = "@attribute class {"
+        for i in range(self.n_classes):
+            class_str += f"{i:.1f}"
+            if i == self.n_classes - 1:
+                class_str += "}"
+            else:
+                class_str += ", "
+        header.append(class_str)
+        print(class_str)
+
         header.append("@data")
         header.append("\n")
 
