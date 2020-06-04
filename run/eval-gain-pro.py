@@ -5,30 +5,99 @@ import sys
 import math
 import pandas as pd
 import numpy as np
+from dataclasses import dataclass
 
 def is_empty_file(fpath):
     return False if os.path.isfile(fpath) and os.path.getsize(fpath) > 0 else True
 
 base_dir = os.getcwd()
-generator = "covtype"
-seed = 0
+generator = sys.argv[1]
+seed = sys.argv[2]
 
-kappa=0.4
-ed=90
+@dataclass
+class Param:
+    generator: str = "covtype"
+    seed: int = 0
+    kappa: float = 0.0
+    ed: int =90
+    reuse_window_size: int = 0
+    reuse_rate: float = 0.18
+    lossy_window_size: int = 100000000
+    poisson_lambda: int = 1
+    kappa_window: int = 50
 
-reuse_window_size=0
-reuse_rate=0.18
-lossy_window_size=100000000
-poisson_lambda=1
+covtype_params = Param(
+        generator = generator,
+        seed = seed,
+        kappa=0.4,
+        ed=90,
+        reuse_window_size=0,
+        reuse_rate=0.18,
+        lossy_window_size=100000000,
+        poisson_lambda=1,
+        kappa_window=50)
 
-kappa_window=50
+insect_params = Param(
+        generator = generator,
+        seed = seed,
+        kappa=0.0,
+        ed=110,
+        reuse_window_size=0,
+        reuse_rate=0.9,
+        lossy_window_size=100000000,
+        poisson_lambda=1,
+        kappa_window=50)
+
+sensor_params = Param(
+        generator = generator,
+        seed = seed,
+        kappa=0.0,
+        ed=100,
+        reuse_window_size=0,
+        reuse_rate=0.9,
+        lossy_window_size=100000000,
+        poisson_lambda=1,
+        kappa_window=50)
+
+agrawal_params = Param(
+        generator = generator,
+        seed = seed,
+        kappa=0.1,
+        ed=100,
+        reuse_window_size=0,
+        reuse_rate=0.9,
+        lossy_window_size=100000000,
+        poisson_lambda=6,
+        kappa_window=50)
+
+tree_params = Param(
+        generator = generator,
+        seed = seed,
+        kappa=0.0,
+        ed=100,
+        reuse_window_size=0,
+        reuse_rate=0.9,
+        lossy_window_size=100000000,
+        poisson_lambda=6,
+        kappa_window=50)
+
+if generator == "covtype":
+    p = covtype_params
+elif generator == "sensor":
+    p = sensor_params
+elif generator[:6] == "insect":
+    p = insect_params
+elif generator[:4] == "tree":
+    p = tree_params
+elif generator[:7] == "agrawal":
+    p = agrawal_params
 
 arf_data_dir = f"{base_dir}/{generator}"
-pearl_data_dir = f"{arf_data_dir}/k{kappa}-e{ed}/r{reuse_rate}-r{reuse_rate}-w{reuse_window_size}/lossy-{lossy_window_size}/"
+pearl_data_dir = f"{arf_data_dir}/k{p.kappa}-e{p.ed}/r{p.reuse_rate}-r{p.reuse_rate}-w{p.reuse_window_size}/lossy-{p.lossy_window_size}/"
 gain_report_path = f"{arf_data_dir}/gain-pro-report.txt"
 
-arf_output  = f"{arf_data_dir}/result-{seed}-{poisson_lambda}.csv"
-pearl_output = f"{pearl_data_dir}/result-{seed}-{poisson_lambda}.csv"
+arf_output  = f"{arf_data_dir}/result-{seed}-{p.poisson_lambda}.csv"
+pearl_output = f"{pearl_data_dir}/result-{seed}-{p.poisson_lambda}.csv"
 
 arf_df = pd.read_csv(arf_output)
 pearl_df = pd.read_csv(pearl_output)
@@ -39,7 +108,7 @@ print("evaluating params...")
 
 gain_report_out = open(gain_report_path, "w")
 gain_report_out.write("param,reuse-param,lossy-win,#instances,pearl-arf,nacre-arf,nacre-pearl\n")
-param_strs = ["seq", "backtrack", "adapt_window", "stability", "nacre"]
+param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
 
 def eval_nacre_output(cur_data_dir, param_values, gain_report_out):
 
@@ -53,7 +122,7 @@ def eval_nacre_output(cur_data_dir, param_values, gain_report_out):
             param_values.pop()
 
     else:
-        nacre_output = f"{cur_data_dir}/result-pro-{seed}-{poisson_lambda}.csv"
+        nacre_output = f"{cur_data_dir}/result-pro-{seed}-{p.poisson_lambda}.csv"
         gain_output = f"{cur_data_dir}/gain.csv"
         with open(gain_output, "w") as out:
 
@@ -68,17 +137,15 @@ def eval_nacre_output(cur_data_dir, param_values, gain_report_out):
 
             num_instances = nacre_df["count"]
 
-            out.write("#count,pearl-arf-gain,nacre-arf-gain,nacre-pearl-gain\n")
+            out.write("#count,seq,backtrack," \
+                      "adapt_win,stability," \
+                      "hybrid,pearl-arf-gain,nacre-arf-gain,nacre-pearl-gain\n")
 
-            end = min(len(nacre_acc), len(arf_acc))
+            end = min(int(sys.argv[3]), min(len(nacre_acc), len(arf_acc)))
 
             pearl_arf_gain = 0
             nacre_arf_gain = 0
             nacre_pearl_gain = 0
-
-            pearl_arf_gain_list = []
-            nacre_arf_gain_list = []
-            nacre_pearl_gain_list = []
 
             for i in range(0, end):
                 # pearl_arf_gain += pearl_acc[i] - arf_acc[i]
@@ -92,17 +159,6 @@ def eval_nacre_output(cur_data_dir, param_values, gain_report_out):
                                           f"{pearl_arf_gain},"
                                           f"{nacre_arf_gain},"
                                           f"{nacre_pearl_gain}\n")
-
-                    pearl_arf_gain_list.append(pearl_arf_gain)
-                    nacre_arf_gain_list.append(nacre_arf_gain)
-                    nacre_pearl_gain_list.append(nacre_pearl_gain)
-
-                out.write(f"{num_instances[i]},"
-                          f"{pearl_arf_gain},"
-                          f"{nacre_arf_gain},"
-                          f"{nacre_pearl_gain}\n")
-
-                out.flush()
 
 eval_nacre_output(cur_data_dir, [], gain_report_out)
 
