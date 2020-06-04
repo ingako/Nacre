@@ -69,4 +69,25 @@ for seed in range(0, 10):
             actual_drifts.append(int(line))
             if int(line) > end:
                 break
-    print(actual_drifts)
+
+    offset = 200
+    for tree_idx in range(60):
+        all_prediction = all_predictions[tree_idx]
+        i, j = 0, 0
+        true_positive, false_positive = 0, 0
+        while i < len(all_prediction) and j < len(actual_drifts):
+            if all_prediction[i] < actual_drifts[j]:
+                if all_prediction[i] <= actual_drifts[j] - offset:
+                    false_positive += 1
+                else:
+                    true_positive += 1
+                    j += 1
+                i += 1
+            else:
+                if all_prediction[i] >= actual_drifts[j] + offset:
+                    false_positive += 1
+                else:
+                    true_positive += 1
+                    i += 1
+                j += 1
+        print(f"true_positive={true_positive}, false_positive={false_positive}")
