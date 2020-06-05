@@ -33,18 +33,18 @@ data_dir = f"../data/{generator}/"
 
 param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
 
-agrawal_abrupt_poisson10_params = ['8', '25', '200', '0.01', '0.9']
-agrawal_abrupt_poisson3_params = ['8', '25', '400', '0.001', '0.9']
-agrawal_abrupt_uniform_params = ['8', '25', '500', '0.001', '0.9']
+param_dict = {
+"agrawal/abrupt/poisson10" : ['8', '25', '200', '0.01', '0.9'],
+"agrawal/abrupt/poisson3" : ['8', '25', '400', '0.001', '0.9'],
+"agrawal/abrupt/uniform-1" : ['8', '25', '500', '0.001', '0.9'],
+"agrawal/gradual/poisson10" : ['8', '25', '400', '0.01', '0.9'],
+"agrawal/gradual/poisson3" : ['8', '25', '300', '0.1', '0.9'],
+"agrawal/gradual/uniform-1" : ['8', '25', '400', '0.1', '0.9']
+}
+print(param_dict)
 
-agrawal_gradual_poisson10_params = ['8', '25', '400', '0.01', '0.9']
-agrawal_gradual_poisson3_params = ['8', '25', '300', '0.1', '0.9']
-agrawal_gradual_uniform_params = ['8', '25', '400', '0.1', '0.9']
 
-
-# nacre_param_path = "/".join(agrawal_abrupt_poisson10_params)
-nacre_param_path = "/".join(agrawal_abrupt_poisson3_params)
-#nacre_param_path = "/".join(agrawal_abrupt_uniform_params)
+nacre_param_path = "/".join(param_dict[generator])
 
 
 agrawal_params = Param(
@@ -71,6 +71,9 @@ if generator[:7] == "agrawal":
     p = agrawal_params
 elif generator[:4] == "tree":
     p = tree_params
+
+
+all_precisions, all_recalls = [], []
 
 for seed in range(0, 10):
 
@@ -100,47 +103,39 @@ for seed in range(0, 10):
             if int(line) > end:
                 break
 
-    for tree_idx in range(60):
-        all_prediction = all_predictions[tree_idx]
-        i, j = 0, 0
-        true_positive, false_positive = 0, 0
-
-        offset = 1000
-        while i < len(all_prediction) and j < len(actual_drifts):
-            if all_prediction[i] < actual_drifts[j]:
-                if all_prediction[i] <= actual_drifts[j] - offset:
-                    false_positive += 1
-                else:
+    offset = 200
+    true_positive, false_positive = 0, 0
+    for actual_drift in actual_drifts:
+        true_positive_found = False
+        max_false_positives = 0
+        for tree_idx in range(60):
+            all_prediction = all_predictions[tree_idx]
+            cur_false_positives = 0
+            while all_prediction and all_prediction[0] < actual_drift:
+                cur_false_positives += 1
+                all_prediction.pop(0)
+            max_false_positives = max(max_false_positives, cur_false_positives)
+            if all_prediction \
+                    and all_prediction[0] <= actual_drift + offset:
+                all_prediction.pop(0)
+                if not true_positive_found:
+                    true_positive_found = True
                     true_positive += 1
-                    j += 1
-                i += 1
-            else:
-                if all_prediction[i] >= actual_drifts[j] + offset:
-                    false_positive += 1
-                else:
-                    true_positive += 1
-                    i += 1
-                j += 1
+        false_positive += max_false_positives
+    false_negative  = len(actual_drifts) - true_positive
+    print(f"seed {seed} : true_positive={true_positive}, false_positive={false_positive}, false_negative={false_negative}")
 
-        # offset = 1000
-        # while i < len(all_prediction) and j < len(actual_drifts):
-        #     if all_prediction[i] < actual_drifts[j]:
-        #         false_positive += 1
-        #         i += 1
-        #     else:
-        #         if all_prediction[i] >= actual_drifts[j] + offset:
-        #             false_positive += 1
-        #         else:
-        #             true_positive += 1
-        #             i += 1
-        #         j += 1
+    if true_positive + false_positive == 0 or true_positive + false_negative == 0:
+        print(f"precision=0 recall=0")
+        continue
+    precision = true_positive / (true_positive + false_positive)
+    recall = true_positive / (true_positive + false_negative)
+    print(f"precision={precision}, recall={recall}")
 
-        false_negative  = len(actual_drifts) - true_positive
-        print(f"tree {tree_idx} : true_positive={true_positive}, false_positive={false_positive}, false_negative={false_negative}")
+    all_precisions.append(precision)
+    all_recalls.append(recall)
 
-        if true_positive + false_positive == 0 or true_positive + false_negative == 0:
-            print(f"precision=0 recall=0")
-            continue
-        precision = true_positive / (true_positive + false_positive)
-        recall = true_positive / (true_positive + false_negative)
-        print(f"precision={precision}, recall={recall}")
+precisions_mean, precisions_std = np.mean(all_precisions), np.std(all_precisions)
+recalls_mean, recalls_std = np.mean(all_recalls), np.std(all_recalls)
+print(f"precision={precisions_mean:.2f}+{precisions_std:.2f}")
+print(f"recall={recalls_mean:.2f}+{recall:.2f}")
