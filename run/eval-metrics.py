@@ -105,7 +105,22 @@ def get_metrics_for_seed(seed,
             lossy_window_size=100000000,
             poisson_lambda=6,
             kappa_window=50)
-    p = agrawal_params
+
+    tree_params = Param(
+            generator = generator,
+            seed = seed,
+            kappa=0.0,
+            ed=100,
+            reuse_window_size=0,
+            reuse_rate=0.9,
+            lossy_window_size=100000000,
+            poisson_lambda=6,
+            kappa_window=50)
+
+    if generator[:7] == "agrawal":
+        p = agrawal_params
+    elif generator[:4] == "tree":
+        p = tree_params
 
     arf_data_dir = f"{base_dir}/{generator}"
     pearl_data_dir = f"{arf_data_dir}/k{p.kappa}-e{p.ed}/r{p.reuse_rate}-r{p.reuse_rate}-w{p.reuse_window_size}/lossy-{p.lossy_window_size}/"
@@ -115,6 +130,10 @@ def get_metrics_for_seed(seed,
 
     arf_acc_per_drift  = f"{arf_data_dir}/acc-per-drift-{seed}.csv"
     pearl_acc_per_drift = f"{pearl_data_dir}/acc-per-drift-{seed}.csv"
+
+    if is_empty_file(pearl_output):
+        print(f"{pearl_output} is empty")
+        return
 
     # metrics for ARF and PEARL
     arf_df = pd.read_csv(arf_output)
