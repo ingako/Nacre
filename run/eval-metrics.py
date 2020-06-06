@@ -212,17 +212,25 @@ for (key, vals) in nacre_metrics_dict.items():
                 result = [key, vals]
 
 
-def get_metric_in_latex(metrics):
+def get_metric_in_latex(metrics, is_arf):
     for i in range(len(metric_strs)):
         mean = np.mean(metrics[i])
         std = np.std(metrics[i])
 
         if metric_strs[i] == "#Trees":
             mean, std = int(round(mean)), int(round(std))
-            metrics[i] = f"${mean}\pm{std}$"
+
+            if is_arf:
+                metrics[i] = f"${mean}$"
+            else:
+                metrics[i] = f"${mean}\pm{std}$"
         else:
             mean, std = round(mean, 2), round(std, 2)
             metrics[i] = f"${mean:.2f}\pm{std:.2f}$"
+
+        if is_arf and (metric_strs[i] == "Gain per Drift" \
+                       or  metric_strs[i] == "Cum. Acc. Gain"):
+            metrics[i] = "-"
     return " & ".join(metrics)
 
 
@@ -230,6 +238,6 @@ pp = PrettyPrinter()
 pp.pprint(nacre_metrics_dict)
 pp.pprint(result)
 
-print(get_metric_in_latex(arf_metrics_cum))
-print(get_metric_in_latex(pearl_metrics_cum))
+print(get_metric_in_latex(arf_metrics_cum, True))
+print(get_metric_in_latex(pearl_metrics_cum, False))
 print(" & ".join(result[1]))
