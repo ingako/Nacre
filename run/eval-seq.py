@@ -34,12 +34,19 @@ data_dir = f"../data/{generator}/"
 param_strs = ["seq", "backtrack", "adapt_window", "stability", "hybrid"]
 
 param_dict = {
-"agrawal/abrupt/poisson10" : ['8', '25', '200', '0.01', '0.9'],
-"agrawal/abrupt/poisson3" : ['8', '25', '400', '0.001', '0.9'],
-"agrawal/abrupt/uniform-1" : ['8', '25', '500', '0.001', '0.9'],
-"agrawal/gradual/poisson10" : ['8', '25', '400', '0.01', '0.9'],
-"agrawal/gradual/poisson3" : ['8', '25', '300', '0.1', '0.9'],
-"agrawal/gradual/uniform-1" : ['8', '25', '400', '0.1', '0.9']
+    "agrawal/abrupt/poisson10" : ['8', '25', '200', '0.01', '0.9'],
+    "agrawal/abrupt/poisson3" : ['8', '25', '400', '0.001', '0.9'],
+    "agrawal/abrupt/uniform-1" : ['8', '25', '500', '0.001', '0.9'],
+    "agrawal/gradual/poisson10" : ['8', '25', '400', '0.01', '0.9'],
+    "agrawal/gradual/poisson3" : ['8', '25', '300', '0.1', '0.9'],
+    "agrawal/gradual/uniform-1" : ['8', '25', '400', '0.1', '0.9'],
+
+    "tree/abrupt/poisson3": ['8', '25', '300', '0.1', '0.9'],
+    "tree/abrupt/poisson10": ['8', '25', '300', '0.01', '0.9'],
+    "tree/abrupt/uniform-1" : ['8', '25', '200', '0.01', '0.9'],
+    "tree/gradual/poisson3":['8', '25', '300', '0.1', '0.9'],
+    "tree/gradual/poisson10": ['8', '25', '300', '0.1', '0.9'],
+    "tree/gradual/uniform-1": ['8', '25', '300', '0.1', '0.9']
 }
 print(param_dict)
 
@@ -138,4 +145,4 @@ for seed in range(0, 10):
 precisions_mean, precisions_std = np.mean(all_precisions), np.std(all_precisions)
 recalls_mean, recalls_std = np.mean(all_recalls), np.std(all_recalls)
 print(f"precision={precisions_mean:.2f}+{precisions_std:.2f}")
-print(f"recall={recalls_mean:.2f}+{recall:.2f}")
+print(f"& {precisions_mean:.2f}\pm{precisions_std:.2f} & {recalls_mean:.2f}\pm{recall:.2f}")
