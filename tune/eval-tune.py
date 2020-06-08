@@ -204,7 +204,7 @@ for (key, vals) in nacre_metrics_dict.items():
             mean, std = round(mean, 2), round(std, 2)
             nacre_metrics_dict[key][i] = f"${mean:.2f}\pm{std:.2f}$"
 
-def print_metric_str(seq_len=8,
+def print_metric_str_poisson10_abrupt(seq_len=8,
                      backtrack_window=25,
                      pro_drift_window=200,
                      stability=0.01,
@@ -214,6 +214,28 @@ def print_metric_str(seq_len=8,
     key = (f'{seq_len}', f'{backtrack_window}', f'{pro_drift_window}', f'{stability}', f'{hybrid}')
     row = ' & '.join(nacre_metrics_dict[key][2:])
     print(f'{column_key} & {row} \\\\')
+
+def print_metric_str_poisson10_gradual(
+        seq_len=8,
+        backtrack_window=25,
+        pro_drift_window=400,
+        stability=0.01,
+        hybrid=0.9,
+        nacre_metrics_dict=None,
+        column_key=None):
+    key = (f'{seq_len}', f'{backtrack_window}', f'{pro_drift_window}', f'{stability}', f'{hybrid}')
+    row = ' & '.join(nacre_metrics_dict[key][2:])
+    print(f'{column_key} & {row} \\\\')
+
+
+generator = sys.argv[1]
+if "agrawal/abrupt/" in generator:
+    print_metric_str = print_metric_str_poisson10_abrupt
+elif "agrawal/gradual/" in generator:
+    print_metric_str = print_metric_str_poisson10_gradual
+else:
+    print("Unknown generator")
+
 
 for seq_len in [4, 8, 12, 16]:
     print_metric_str(seq_len=seq_len,
