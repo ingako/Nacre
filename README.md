@@ -20,7 +20,7 @@ make -j8
 
 ##### Real World Dataset
 
-All the real world datasets are under `data/`. 
+Please refer to the paper for obtaining the real world datasets.
 
 
 ##### Synthetic Dataset
